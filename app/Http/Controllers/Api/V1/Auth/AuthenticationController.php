@@ -10,7 +10,10 @@ use App\Models\User;
 use App\Services\Api\V1\Auth\AuthService;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class AuthenticationController extends Controller
 {
@@ -44,6 +47,45 @@ class AuthenticationController extends Controller
     public function logout(Request $request) {
         $this->authService->logoutUser();
         return $this->successResponse(message: __('responses.auth.success.logout'));
+    }
+
+    public function forgotPassword(Request $request) {
+        $request->validate(['email' => 'required|email']);
+
+        $status = Password::sendResetLink($request->only('email'));
+        return $status === Password::RESET_LINK_SENT
+            ? $this->successResponse(__($status))
+            : $this->errorResponse(__($status));
+
+    }
+    public function setNewPassword(string $token) {
+        return view('auth.password_reset', ['token' => $token, 'email' => request()->input('email')]);
+
+    }
+
+    public function reset(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->password = Hash::make($password);
+                $user->save();
+            }
+        );
+
+        return $status === Password::PASSWORD_RESET
+            ? $this->successResponse(__('responses.auth.success.password_reset'))
+            : $this->errorResponse(__($status));
+    }
+
+    public function resetSuccess() {
+        return view('auth.password_reset_success');
     }
 
 

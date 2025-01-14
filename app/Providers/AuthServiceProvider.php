@@ -4,7 +4,8 @@ namespace App\Providers;
 
 // use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-
+use App\Notifications\Api\V1\Auth\CustomResetPassword;
+use Illuminate\Auth\Notifications\ResetPassword;
 class AuthServiceProvider extends ServiceProvider
 {
     /**
@@ -21,6 +22,8 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        ResetPassword::toMailUsing(function ($notifiable, $token) {
+            return (new CustomResetPassword($token))->toMail($notifiable);
+        });
     }
 }

@@ -15,12 +15,16 @@ return [
     'auth' => [
         'success' => [
             'login' => 'User logged in successfully.',
-            'register' => 'User registered successfully.',
+            'register' => 'User registered successfully. Verification email sent.',
             'logout' => 'User logged out successfully.',
-            'password_reset' => 'Password has been reset successfully.'
+            'password_reset' => 'Password has been reset successfully.',
+            'email_verification_already' => 'Email already verified.',
+            'account_verification_email_sent' => 'Verification email sent.',
+            'email_verified' => 'Email successfully verified.'
         ],
         'failed' => [
-            'login' => 'Invalid credentials.'
+            'login' => 'Invalid credentials.',
+            'email_verification' => 'Invalid verification link.'
         ]
     ]
 ];

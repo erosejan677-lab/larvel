@@ -21,8 +21,11 @@ trait ApiResponse
         $response = [
             'status' => 'success',
             'message' => $message ?? __('responses.general.success'),
-            'data' => $data,
         ];
+
+        if ($data) {
+           $response['data'] = $data;
+        }
 
         if (!empty($meta)) {
             $response['meta'] = $meta;

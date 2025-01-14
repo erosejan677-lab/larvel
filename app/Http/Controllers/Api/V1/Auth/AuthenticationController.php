@@ -8,6 +8,8 @@ use App\Http\Requests\Api\V1\Auth\RegisterUserRequest;
 use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
 use App\Http\Resources\Api\V1\User\UserResource;
 use App\Models\User;
+use App\Notifications\Api\V1\Auth\VerifyEmail;
+use App\Repositories\V1\Contracts\UserRepositoryInterface;
 use App\Services\Api\V1\Auth\AuthService;
 use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Auth;
@@ -15,20 +17,27 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Auth\Events\Registered;
 class AuthenticationController extends Controller
 {
     use ApiResponse;
     protected $authService;
+    protected $userRepo;
 
-    public function __construct(AuthService $authService) {
+    public function __construct(AuthService $authService, UserRepositoryInterface $userRepo) {
         $this->authService = $authService;
+        $this->userRepo = $userRepo;
     }
 
     public function register(RegisterUserRequest $request) {
         $input = $request->validated();
 
         $user = $this->authService->registerUser($input);
+
+        // Send the email verification notification
+        $user->sendEmailVerificationNotification();
+
         $resource = new UserResource($user);
         return $this->createdResponse($resource, __('responses.auth.success.register'));
     }
@@ -77,12 +86,41 @@ class AuthenticationController extends Controller
         );
 
         return $status === Password::PASSWORD_RESET
-            ? $this->successResponse(__('responses.auth.success.password_reset'))
+            ? $this->successResponse(message: __('responses.auth.success.password_reset'))
             : $this->errorResponse(__($status));
     }
 
     public function resetSuccess() {
         return view('auth.password_reset_success');
+    }
+
+    public function sendVerificationEmail(Request $request)
+    {
+        $user = $this->userRepo->findByEmail($request->input('email'));
+        if ($user->hasVerifiedEmail()) {
+            return $this->successResponse(message: __('responses.auth.success.email_verification_already'));
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return $this->successResponse(message: __('response.auth.success.account_email_verification_sent'));
+    }
+
+    public function verifyEmail(Request $request, $id, $hash)
+    {
+        $user = $this->userRepo->find($id);
+
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            return $this->forbiddenResponse(__('responses.auth.failed.email_verification'));
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return $this->successResponse(message: __('responses.auth.success.email_verification_already'));
+        }
+
+        $user->markEmailAsVerified();
+
+        return $this->successResponse(message: __('responses.auth.success.email_verified'));
     }
 
 

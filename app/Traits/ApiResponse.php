@@ -16,7 +16,7 @@ trait ApiResponse
      * @param array $meta
      * @return JsonResponse
      */
-    public function successResponse(mixed $data = null, string $message = null, int $statusCode = 200, array $meta = []): JsonResponse
+    public function successResponse(mixed $data = null, ?string $message = null, int $statusCode = 200, array $meta = []): JsonResponse
     {
         $response = [
             'status' => 'success',
@@ -43,7 +43,7 @@ trait ApiResponse
      * @param array $meta
      * @return JsonResponse
      */
-    public function errorResponse(string $message = null, int $statusCode = 400, array $errors = null, array $meta = []): JsonResponse
+    public function errorResponse(?string $message = null, int $statusCode = 400, ?array $errors = null, array $meta = []): JsonResponse
     {
         $response = [
             'status' => 'error',
@@ -69,7 +69,7 @@ trait ApiResponse
      * @param int $statusCode
      * @return JsonResponse
      */
-    public function paginatedResponse(LengthAwarePaginator $paginator, string $message = null, int $statusCode = 200): JsonResponse
+    public function paginatedResponse(LengthAwarePaginator $paginator, ?string $message = null, int $statusCode = 200): JsonResponse
     {
         return response()->json([
             'status' => 'success',
@@ -90,7 +90,7 @@ trait ApiResponse
      * @param string|null $message
      * @return JsonResponse
      */
-    public function noContentResponse(string $message = null): JsonResponse
+    public function noContentResponse(?string $message = null): JsonResponse
     {
         return response()->json([
             'status' => 'success',
@@ -175,7 +175,7 @@ trait ApiResponse
      * @param array|null $errors
      * @return JsonResponse
      */
-    public function serverErrorResponse(?string $message = null, array $errors = null): JsonResponse
+    public function serverErrorResponse(?string $message = null, ?array $errors = null): JsonResponse
     {
         $response = [
             'status' => 'error',
@@ -199,7 +199,7 @@ trait ApiResponse
      * @param array $meta
      * @return JsonResponse
      */
-    public function customResponse(string $status, mixed $data = null, string $message = null, int $statusCode = 200, array $meta = []): JsonResponse
+    public function customResponse(string $status, mixed $data = null, ?string $message = null, int $statusCode = 200, array $meta = []): JsonResponse
     {
         $response = [
             'status' => $status,

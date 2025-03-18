@@ -26,5 +26,14 @@ return [
             'login' => 'Invalid credentials.',
             'email_verification' => 'Invalid verification link.'
         ]
+    ],
+    'product' => [
+        'success' => [
+            'create' => 'Product created successfully.'
+
+        ],
+        'failed' => [
+            'create' => 'Error creating product: :message',
+        ]
     ]
 ];

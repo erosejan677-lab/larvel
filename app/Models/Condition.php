@@ -17,4 +17,7 @@ class Condition extends Model
     protected $hidden = ['created_at', 'updated_at'];
 
 
+    public function products() {
+        $this->hasMany(Product::class);
+    }
 }

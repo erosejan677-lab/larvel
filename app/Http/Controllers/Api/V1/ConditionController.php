@@ -16,4 +16,9 @@ class ConditionController extends Controller
 
         return $this->successResponse($conditions);
     }
+
+    public function show($id) {
+        $condition = Condition::find($id);
+        return $this->successResponse($condition);
+    }
 }

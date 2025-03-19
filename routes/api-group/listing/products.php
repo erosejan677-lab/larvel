@@ -8,6 +8,9 @@ Route::prefix('auth/products')->middleware(['auth:sanctum', 'role:user'])->group
     // Create a new product
     Route::post('create', [ProductController::class, 'store']);
 
+    // Optionally, search/filter within the vendor's own products
+    Route::get('search', [ProductController::class, 'searchUserProducts']);
+
     // Get all products for the authenticated user
     Route::get('show', [ProductController::class, 'userProducts']);
 
@@ -20,8 +23,6 @@ Route::prefix('auth/products')->middleware(['auth:sanctum', 'role:user'])->group
     // Delete a product
     Route::delete('{id}', [ProductController::class, 'destroy']);
 
-    // Optionally, search/filter within the vendor's own products
-    Route::get('search', [ProductController::class, 'searchUserProducts']);
 });
 
 // Public product endpoints:
@@ -29,10 +30,10 @@ Route::prefix('public/products')->group(function () {
     // Get all public products with relationships (existing)
     Route::get('show', [ProductController::class, 'publicProducts']);
 
-    // Get a single product details (by ID)
-    Route::get('{id}', [ProductController::class, 'showSingle']);
-
     // Search & filter products (by query parameters) with pagination.
     // Example: /v1/listing/public/products/search?category_id=1&brand_id=2&min_price=100&max_price=500&page=1
     Route::get('search', [ProductController::class, 'search']);
+
+    // Get a single product details (by ID)
+    Route::get('{id}', [ProductController::class, 'showSingle']);
 });

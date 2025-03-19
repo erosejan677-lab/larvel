@@ -165,7 +165,8 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request, $id)
     {
         $user = auth()->user();
-        $product = Product::where('id', $id)->where('user_id', $user->id)->first();
+        $product = Product::with(['photos', 'category', 'brand', 'condition', 'address', 'user'])
+            ->where('id', $id)->where('user_id', $user->id)->first();
 
         if (!$product) {
             return $this->notFoundResponse();

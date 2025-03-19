@@ -14,11 +14,22 @@ class CategoriesController extends Controller
     /**
      * Fetch all categories grouped by category group.
      */
-    public function index()
+    public function index(Request $request)
     {
         // Group the categories by the 'group' field (Men, Women, Kids, Everything else)
-        $categories = Category::all()->groupBy('group');
+        $categoriesQuery = Category::query();
+
+        if ($request->query('group')) {
+            $categoriesQuery->where('group', $request->query('group'));
+        }
+
+        $categories = $categoriesQuery->get()->groupBy('group');
 
         return $this->successResponse($categories);
+    }
+
+    public function show($id) {
+        $category = Category::find($id);
+        return $this->successResponse($category);
     }
 }

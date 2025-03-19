@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Api\V1\User;
+namespace App\Http\Requests\Api\V1\Listing;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class CreateAddressRequest extends FormRequest
+class UpdateProductRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,11 +22,10 @@ class CreateAddressRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'address_line_1' => 'required|string|max:255',
-            'address_line_2' => 'nullable|string|max:255',
-            'city' => 'required|string|max:100',
-            'state_province_or_region' => 'required|string|max:100',
-            'zip_or_postal_code' => 'required|string|max:20',
+            'title'         => 'sometimes|required|string|max:255',
+            'description'   => 'sometimes|nullable|string',
+            'price'         => 'sometimes|required|numeric',
+
         ];
     }
 }

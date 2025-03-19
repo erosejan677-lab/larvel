@@ -10,8 +10,20 @@ use Illuminate\Http\Request;
 class BrandController extends Controller
 {
     use ApiResponse;
-    public function index() {
-        $brands = Brand::all();
+    public function index(Request $request) {
+        $brandsQuery = Brand::query();
+
+        if ($request->query('name')) {
+            $brandsQuery->where('name', 'like', '%' . $request->query('name') . '%');
+        }
+
+        $brands = $brandsQuery->get();
+
         return $this->successResponse($brands);
+    }
+
+    public function show($id) {
+        $brand = Brand::find($id);
+        return $this->successResponse($brand);
     }
 }

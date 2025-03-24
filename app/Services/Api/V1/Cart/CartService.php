@@ -40,10 +40,9 @@ class CartService
                 'product_id' => $productId,
                 'quantity'   => $quantity,
             ]);
-            $cartItem->load('product');
         }
 
-        return $cartItem;
+        return $cartItem->load('product');
     }
 
     /**

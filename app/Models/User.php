@@ -103,5 +103,21 @@ class User extends Authenticatable implements MustVerifyEmailContract
     public function averageRating() {
         return $this->ratings()->avg('rating');
     }
+
+    /**
+     * The conversations this user participates in.
+     */
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_user')->withTimestamps();
+    }
+
+    /**
+     * All messages sent by this user.
+     */
+    public function sentMessages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
 }
 

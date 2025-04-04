@@ -14,29 +14,29 @@ class OfferService
     /**
      * Create a new offer on a product.
      *
-     * @param User $user  Authenticated user making the offer.
-     * @param  array  $data  Validated data (product_id, offer_price, message).
+     * @param User $user  The authenticated user making the offer.
+     * @param  array  $data  Validated data: product_id, offer_price, message.
      * @return Offer
-     * @throws Exception
+     * @throws \Exception
      */
-    public function createOffer(User $user, array $data)
+    public function createOffer($user, array $data)
     {
         $product = Product::findOrFail($data['product_id']);
 
         // Prevent self-offer.
         if ($product->user_id == $user->id) {
-            throw new Exception('You cannot make an offer on your own product');
+            throw new \Exception('You cannot make an offer on your own product');
         }
 
-        // Validate that the offer is less than the listed price.
+        // Validate that the offered price is less than the listed price.
         if ($data['offer_price'] >= $product->price) {
-            throw new Exception('Offer must be less than the product price');
+            throw new \Exception('Offer must be less than the product price');
         }
 
         // Ensure the offer is at least 10% of the product price.
         $minOffer = $product->price * 0.1;
         if ($data['offer_price'] < $minOffer) {
-            throw new Exception('Offer must be at least 10% of the product price');
+            throw new \Exception('Offer must be at least 10% of the product price');
         }
 
         // Create the offer record.
@@ -45,7 +45,7 @@ class OfferService
             'offerer_id'  => $user->id,
             'offer_price' => $data['offer_price'],
             'message'     => $data['message'] ?? null,
-            'status'      => 'pending',
+            'status'      => 'pending'
         ]);
 
         return $offer;
@@ -53,9 +53,6 @@ class OfferService
 
     /**
      * Get offers received by the authenticated user (i.e. on products owned by the user).
-     *
-     * @param  User  $user
-     * @return Collection
      */
     public function getReceivedOffers($user)
     {
@@ -66,9 +63,6 @@ class OfferService
 
     /**
      * Get offers sent by the authenticated user.
-     *
-     * @param  User  $user
-     * @return Collection
      */
     public function getSentOffers($user)
     {
@@ -79,22 +73,25 @@ class OfferService
 
     /**
      * Accept an offer.
-     * Only the product owner can accept the offer.
+     * Either participant (offerer or product owner) may accept the current terms.
      *
-     * @param  User  $user  Authenticated product owner.
+     * @param User $user  The authenticated user.
      * @param  int  $offerId
      * @return Offer
-     * @throws Exception
+     * @throws \Exception
      */
     public function acceptOffer($user, $offerId)
     {
         $offer = Offer::with('product')->findOrFail($offerId);
 
-        if ($offer->product->user_id != $user->id) {
-            throw new Exception('Unauthorized: You are not the owner of this product');
+        // Ensure the user is a participant.
+        if (!in_array($user->id, [$offer->offerer_id, $offer->product->user_id])) {
+            throw new \Exception('Unauthorized: You are not a participant in this negotiation');
         }
+
+        // Only allow accepting if the offer is in a negotiable state.
         if (!in_array($offer->status, ['pending', 'countered'])) {
-            throw new Exception('Offer cannot be accepted');
+            throw new \Exception('Offer cannot be accepted in its current state');
         }
 
         $offer->status = 'accepted';
@@ -105,22 +102,24 @@ class OfferService
 
     /**
      * Reject an offer.
-     * Only the product owner can reject the offer.
+     * Either participant may reject the negotiation.
      *
-     * @param  User  $user
+     * @param User $user
      * @param  int  $offerId
      * @return Offer
-     * @throws Exception
+     * @throws \Exception
      */
     public function rejectOffer($user, $offerId)
     {
         $offer = Offer::with('product')->findOrFail($offerId);
 
-        if ($offer->product->user_id != $user->id) {
-            throw new Exception('Unauthorized: You are not the owner of this product');
+        // Ensure the user is a participant.
+        if (!in_array($user->id, [$offer->offerer_id, $offer->product->user_id])) {
+            throw new \Exception('Unauthorized: You are not a participant in this negotiation');
         }
+
         if (!in_array($offer->status, ['pending', 'countered'])) {
-            throw new Exception('Offer cannot be rejected');
+            throw new \Exception('Offer cannot be rejected in its current state');
         }
 
         $offer->status = 'rejected';
@@ -131,36 +130,35 @@ class OfferService
 
     /**
      * Counter an offer.
-     * The product owner may propose a counter offer.
+     * Either participant may counter by proposing a new price.
      *
-     * @param  User  $user  Authenticated product owner.
+     * @param User $user  The authenticated user.
      * @param  int  $offerId
-     * @param  array  $data  Validated data (counter_price, message).
+     * @param  array  $data  Validated data: counter_price, message.
      * @return Offer
-     * @throws Exception
+     * @throws \Exception
      */
     public function counterOffer($user, $offerId, array $data)
     {
         $offer = Offer::with('product')->findOrFail($offerId);
 
-        if ($offer->product->user_id != $user->id) {
-            throw new Exception('Unauthorized: You are not the owner of this product');
-        }
-        if (!in_array($offer->status, ['pending', 'countered'])) {
-            throw new Exception('Offer cannot be countered');
+        // Ensure the user is a participant.
+        if (!in_array($user->id, [$offer->offerer_id, $offer->product->user_id])) {
+            throw new \Exception('Unauthorized: You are not a participant in this negotiation');
         }
 
+        // Validate the new counter offer price.
         if ($data['counter_price'] >= $offer->product->price) {
-            throw new Exception('Counter offer must be less than the product price');
+            throw new \Exception('Counter offer must be less than the product price');
         }
-
         $minOffer = $offer->product->price * 0.1;
         if ($data['counter_price'] < $minOffer) {
-            throw new Exception('Counter offer must be at least 10% of the product price');
+            throw new \Exception('Counter offer must be at least 10% of the product price');
         }
 
+        // Update the current offer with the new counter price and message.
+        $offer->offer_price = $data['counter_price'];
         $offer->status = 'countered';
-        $offer->counter_price = $data['counter_price'];
         if (isset($data['message'])) {
             $offer->message = $data['message'];
         }

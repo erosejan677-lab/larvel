@@ -15,7 +15,15 @@ class CartService
     public function getCart($user)
     {
         $cart = Cart::firstOrCreate(['user_id' => $user->id]);
-        $cart->load('items.product');
+        $cart->load([
+            'items.product',
+            'items.product.user',
+            'items.product.photos',
+            'items.product.address',
+            'items.product.category',
+            'items.product.brand',
+            'items.product.condition',
+        ]);
         return $cart;
     }
 

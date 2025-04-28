@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Cart;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Checkout\CheckoutRequest;
 use App\Models\Order;
 use App\Services\Api\V1\Cart\CheckoutService;
 use Illuminate\Http\Request;
@@ -18,27 +19,11 @@ class CheckoutController extends Controller
 
     /**
      * Process a checkout for items from a given seller.
-     *
-     * Request Example:
-     * {
-     *    "seller_id": 5,
-     *    "cart_items": [
-     *         {"product_id": 10, "quantity": 2},
-     *         {"product_id": 11, "quantity": 1}
-     *    ]
-     * }
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
-    public function checkout(Request $request)
+    public function checkout(CheckoutRequest $request)
     {
-        $validated = $request->validate([
-            'seller_id'   => 'required|exists:users,id',
-            'cart_items'  => 'required|array|min:1',
-            'cart_items.*.product_id' => 'required|exists:products,id',
-            'cart_items.*.quantity'   => 'required|integer|min:1'
-        ]);
+        // At this point, all structural & business-rule validations have passed
+        $validated = $request->validated();
 
         try {
             $order = $this->checkoutService->processCheckout(
@@ -46,12 +31,15 @@ class CheckoutController extends Controller
                 $validated['seller_id'],
                 $validated['cart_items']
             );
+
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Checkout completed successfully',
                 'data'    => $order
             ], 201);
+
         } catch (\Exception $e) {
+            // Service‐level errors (should be rare)
             return response()->json([
                 'status'  => 'error',
                 'message' => $e->getMessage()

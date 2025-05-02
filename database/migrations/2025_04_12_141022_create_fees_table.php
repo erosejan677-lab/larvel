@@ -18,14 +18,6 @@ return new class extends Migration
             $table->decimal('fee_amount', 10, 2);
             $table->timestamps();
         });
-
-        // Insert a default flat delivery fee of 250 PKR.
-        DB::table('fees')->insert([
-            'fee_type' => 'delivery',
-            'fee_amount' => 250.00,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
     }
 
     /**

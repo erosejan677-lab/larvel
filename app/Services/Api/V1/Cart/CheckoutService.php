@@ -9,7 +9,9 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Fees;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CheckoutService
 {
@@ -60,11 +62,18 @@ class CheckoutService
             $deliveryFee = Fees::where('fee_type', 'delivery')
                 ->value('fee_amount');
 
+            $platformFee = Fees::where('fee_type', 'platform')
+                ->value('fee_amount');
+
             // 3) Compute buyer‐facing total
             $threshold  = 3000;
             $buyerTotal = ($subtotal >= $threshold)
                 ? $subtotal
                 : $subtotal + $deliveryFee;
+
+            $platformFeeAmount = ($subtotal >= $threshold)
+                ? round(($subtotal - $deliveryFee) * $platformFee, 2)
+                : round($subtotal * $platformFee, 2);
 
             // 4) Create the Order
             $order = Order::create([
@@ -72,6 +81,10 @@ class CheckoutService
                 'seller_id'    => $sellerId,
                 'subtotal'     => $subtotal,
                 'delivery_fee' => $deliveryFee,
+                'platform_fee' => $platformFeeAmount,
+                'expected_delivery_date' => Carbon::now()->addDays(5),
+                'tracking_no' => 'CLSY-' . strtoupper(Str::random(10)),
+                'actual_delivery_date' => null,
                 'total_amount' => $buyerTotal,
                 'status'       => 'pending',
                 'delivery_address_id' => $deliveryAddressId

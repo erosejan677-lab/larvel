@@ -16,7 +16,20 @@ class Order extends Model
         'delivery_fee',
         'total_amount',
         'status',
-        'delivery_address_id'
+        'delivery_address_id',
+        'platform_fee',
+        'expected_delivery_date',
+        'actual_delivery_date',
+        'tracking_no'
+    ];
+
+    protected $casts = [
+        'expected_delivery_date' => 'date',
+        'actual_delivery_date' => 'date',
+        'subtotal' => 'decimal:2',
+        'delivery_fee' => 'decimal:2',
+        'platform_fee' => 'decimal:2',
+        'total_amount' => 'decimal:2',
     ];
 
 

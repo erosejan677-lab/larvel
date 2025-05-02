@@ -28,52 +28,52 @@ class ProductController extends Controller
      * @param CreateProductRequest $request
      * @return JsonResponse
      */
-    public function store(CreateProductRequest $request)
+    public function store(CreateProductRequest $request): JsonResponse
     {
-        // The CreateProductRequest automatically validates the input,
-        // so we can safely retrieve the validated data.
-        $validatedData = $request->validated();
-
-        // ✅ Check if the address_id belongs to the authenticated user
+        $validated = $request->validated();
         $user = auth()->user();
-        $addressId = $validatedData['address_id'] ?? null;
 
-        if (!$user->addresses()->where('id', $addressId)->exists()) {
+        // Validate address ownership
+        if (!$user->addresses()->where('id', $validated['address_id'] ?? null)->exists()) {
             return $this->errorResponse(__('responses.product.failed.invalid_address'));
         }
 
+        // Resolve or create brand
+        $brand = Brand::firstOrCreate(['name' => $validated['brand_name']]);
+        $validated['brand_id'] = $brand->id;
+        unset($validated['brand_name']);
 
-        $brand = Brand::firstOrCreate(
-            ['name' => $validatedData['brand_name']]
-        );
-        $validatedData['brand_id'] = $brand->id;
-        unset($validatedData['brand_name']);
-
-
-        // Get images from the request if they exist.
-        $images = $request->hasFile('images') ? $request->file('images') : null;
+        // Prepare images if present
+        $images = $request->file('images') ?? [];
 
         try {
-            $product = $this->productService->createProduct($validatedData, $images);
+            // Create product
+            $product = $this->productService->createProduct($validated, $images);
 
-            // ✅ Create related Size if size data is present
-            if (isset($validatedData['size_data'])) {
-                $product->size()->create($validatedData['size_data']);
+            // Create associated size if provided
+            if (!empty($validated['size_data'])) {
+                $product->size()->create($validated['size_data']);
             }
 
-            $product->load('size'); // load size after creation
+            // Eager load the size relation
+            $product->load('size');
 
+            // Log product activity
             activity()
-                ->performedOn($product) // this associates the log with the product instance
-                ->causedBy(auth()->user()) // user who performed the activity
+                ->performedOn($product)
+                ->causedBy($user)
                 ->withProperties(['product' => $product])
                 ->log('product_posted');
 
             return $this->successResponse($product, __('responses.product.success.create'));
-        } catch (\Exception $e) {
-            return $this->errorResponse(__('responses.product.failed.create', ['message' => $e->getMessage()]));
+
+        } catch (\Throwable $e) {
+            return $this->errorResponse(
+                __('responses.product.failed.create', ['message' => $e->getMessage()])
+            );
         }
     }
+
 
     public function userProducts() {
         $user = auth()->user();

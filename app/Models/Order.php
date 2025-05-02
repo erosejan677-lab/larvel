@@ -15,7 +15,21 @@ class Order extends Model
         'subtotal',
         'delivery_fee',
         'total_amount',
-        'status'
+        'status',
+        'delivery_address_id',
+        'platform_fee',
+        'expected_delivery_date',
+        'actual_delivery_date',
+        'tracking_no'
+    ];
+
+    protected $casts = [
+        'expected_delivery_date' => 'date',
+        'actual_delivery_date' => 'date',
+        'subtotal' => 'decimal:2',
+        'delivery_fee' => 'decimal:2',
+        'platform_fee' => 'decimal:2',
+        'total_amount' => 'decimal:2',
     ];
 
 
@@ -32,5 +46,10 @@ class Order extends Model
     public function seller()
     {
         return $this->belongsTo(User::class, 'seller_id');
+    }
+
+    public function deliveryAddress()
+    {
+        return $this->belongsTo(Address::class, 'delivery_address_id');
     }
 }

@@ -112,4 +112,14 @@ class CartService
         $cart->items()->delete();
         return true;
     }
+
+    public function removeItemByProductId($user, $productId) {
+        $cart = Cart::firstOrCreate(['user_id' => $user->id]);
+
+        $cartItem = CartItem::where('cart_id', $cart->id)
+            ->where('product_id', $productId)
+            ->first();
+
+
+    }
 }

@@ -17,18 +17,30 @@ return new class extends Migration
             $table->unsignedBigInteger('buyer_id');
             // Seller for this order (each order is per seller)
             $table->unsignedBigInteger('seller_id');
+            // Delivery address for the order
+            $table->unsignedBigInteger('delivery_address_id');
             // Total product cost
             $table->decimal('subtotal', 10, 2);
             // Delivery fee (flat)
             $table->decimal('delivery_fee', 10, 2);
+            // Platform fee
+            $table->decimal('platform_fee', 10, 2)->default(0.00);
+            // Expected delivery date
+            $table->date('expected_delivery_date')->nullable();
+            // Actual delivery date
+            $table->date('actual_delivery_date')->nullable();
+            // Tracking number
+            $table->string('tracking_no')->nullable();
             // Overall total = subtotal + delivery_fee
             $table->decimal('total_amount', 10, 2);
             // Order status e.g. 'pending', 'completed'
             $table->string('status')->default('pending');
             $table->timestamps();
 
+
             $table->foreign('buyer_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('seller_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('delivery_address_id')->references('id')->on('addresses')->onDelete('cascade');
             $table->index('status');
         });
     }

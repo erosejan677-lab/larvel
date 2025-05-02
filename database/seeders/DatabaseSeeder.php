@@ -18,7 +18,8 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             ConditionSeeder::class,
             AdminSeeder::class,
-            RoleSeeder::class
+            RoleSeeder::class,
+            FeeSeeder::class
         ]);
     }
 }

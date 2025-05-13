@@ -21,6 +21,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::prefix('v1')->group(function () {
     require base_path('routes/api-group/auth/auth.php');
+    require base_path('routes/api-group/auth/social-auth.php');
     require base_path('routes/api-group/user/preferences.php');
     Route::prefix('listing')->group(function () {
         foreach (glob(base_path('routes/api-group/listing/*.php')) as $file) {

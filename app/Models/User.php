@@ -31,7 +31,8 @@ class User extends Authenticatable implements MustVerifyEmailContract, Wallet, C
         'last_name',
         'location',
         'username',
-        'profile_picture'
+        'profile_picture',
+        'google_id'
     ];
 
     /**

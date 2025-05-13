@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('password')->nullable();
             $table->string('location')->nullable();
             $table->string('profile_picture')->nullable();
+            $table->string('google_id')->nullable()->unique();
             $table->string('role')->nullable();
             $table->softDeletes();
             $table->rememberToken();

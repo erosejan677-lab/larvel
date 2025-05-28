@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('status')->default('pending');
             $table->date('due_date')->nullable();
 
+            $table->softDeletes();
+
             $table->timestamps();
         });
     }

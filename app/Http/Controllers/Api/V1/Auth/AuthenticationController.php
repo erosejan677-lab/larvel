@@ -96,7 +96,7 @@ class AuthenticationController extends Controller
 
     public function reset(ResetPasswordRequest $request)
     {
-       $input = $request->validated();
+        $input = $request->validated();
 
         $status = Password::reset(
             $input,
@@ -106,10 +106,14 @@ class AuthenticationController extends Controller
             }
         );
 
-        return $status === Password::PASSWORD_RESET
-            ? $this->successResponse(message: __('responses.auth.success.password_reset'))
-            : $this->errorResponse(__($status));
+        if ($status === Password::PASSWORD_RESET) {
+            return redirect('https://closyyyy.com/seller/login')
+                ->with('status', __('responses.auth.success.password_reset'));
+        }
+
+        return $this->errorResponse(__($status));
     }
+
 
     public function resetSuccess() {
         return view('auth.password_reset_success');
@@ -141,7 +145,9 @@ class AuthenticationController extends Controller
 
         $user->markEmailAsVerified();
 
-        return $this->successResponse(message: __('responses.auth.success.email_verified'));
+        return redirect('https://closyyyy.com/seller/login')
+        ->with('status', __('responses.auth.success.email_verified'));
+
     }
 
 

@@ -50,13 +50,26 @@ class GoogleAuthController extends Controller
             ->userFromToken($accessToken);
 
         // 2c. Upsert into users table
+        $firstName = $googleUser->user['given_name'] ?? '';
+        $lastName = $googleUser->user['family_name'] ?? '';
+
+
+        $baseUsername = Str::slug($firstName . $lastName);
+
+
+        $uniqueSuffix = rand(10000, 99999);
+
+
+        $username = $baseUsername . $uniqueSuffix;
+
         $user = User::updateOrCreate(
             ['email' => $googleUser->getEmail()],
             [
                 'google_id'       => $googleUser->getId(),
-                'first_name'      => $googleUser->user['given_name'] ?? '',
-                'last_name'       => $googleUser->user['family_name'] ?? '',
+                'first_name'      => $firstName,
+                'last_name'       => $lastName,
                 'profile_picture' => $googleUser->avatar,
+                'username'        => $username,
             ]
         );
 

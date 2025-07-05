@@ -59,7 +59,7 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
-    'admin_email' => env('ADMIN_EMAIL', ""),
+    'admin_email' => env('ADMIN_EMAIL', "closyyyy@gmail.com"),
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

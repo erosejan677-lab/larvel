@@ -16,7 +16,7 @@ class ProductObserver
     public function created(Product $product): void
     {
         Log::info('Product created');
-        // Mail::to(config('app.admin_email'))->send(new ProductPosted($product));
+        Mail::to(config('app.admin_email'))->send(new ProductPosted($product));
     }
 
     /**
@@ -27,7 +27,7 @@ class ProductObserver
         Log::info('Product updated');
 
         if ($product->isDirty('approval_status') && in_array($product->approval_status, ['approved', 'rejected'])) {
-            // Mail::to($product->user->email)->send(new ProductStatusUpdate($product));
+            Mail::to($product->user->email)->send(new ProductStatusUpdate($product));
         }
     }
 

@@ -63,7 +63,9 @@ class ProductController extends Controller
             $product->load('size');
 
             // Log product activity
-            ActivityLogHelper::logProductPosted($product);
+             ActivityLogHelper::logProductPosted($product);
+
+
 
             return $this->successResponse($product, __('responses.product.success.create'));
 
@@ -101,9 +103,11 @@ class ProductController extends Controller
      */
     public function publicProducts()
     {
+
         $products = Product::with(['user', 'category', 'brand', 'condition', 'photos', 'size'])
-            ->where('approval_status', '!=', 'pending')
+            ->where('approval_status', 'approved')
             ->paginate(10);
+        logger($products);
         return $this->successResponse($products);
     }
 

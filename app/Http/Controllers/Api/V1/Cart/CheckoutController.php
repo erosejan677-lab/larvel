@@ -54,6 +54,7 @@ class CheckoutController extends Controller
      */
     public function getOrders(Request $request)
     {
+        dd(1);
         $type = $request->query('type', 'sold'); // default is 'sold'
         $userId = $request->user()->id;
 

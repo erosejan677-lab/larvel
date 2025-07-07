@@ -59,12 +59,12 @@ class CheckoutController extends Controller
 
         if ($type === 'purchased') {
             $orders = Order::where('buyer_id', $userId)
-                ->with(['items.product', 'items.product.photos', 'seller', 'deliveryAddress'])
+                ->with(['items.product', 'items.product.photos', 'seller', 'deliveryAddress','items.product.category_id'])
                 ->orderBy('created_at', 'desc')
                 ->get();
         } else { // default or 'sold'
             $orders = Order::where('seller_id', $userId)
-                ->with(['items.product', 'items.product.photos', 'buyer', 'deliveryAddress'])
+                ->with(['items.product', 'items.product.photos', 'buyer', 'deliveryAddress','items.product.category_id'])
                 ->orderBy('created_at', 'desc')
                 ->get();
         }

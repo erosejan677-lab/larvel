@@ -14,7 +14,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
-class User extends Authenticatable implements MustVerifyEmailContract, Wallet, Confirmable
+class User extends Authenticatable implements  Wallet, Confirmable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles, HasWallet, CanConfirm;
 
@@ -32,7 +32,8 @@ class User extends Authenticatable implements MustVerifyEmailContract, Wallet, C
         'location',
         'username',
         'profile_picture',
-        'google_id'
+        'google_id',
+        'phone'
     ];
 
     /**

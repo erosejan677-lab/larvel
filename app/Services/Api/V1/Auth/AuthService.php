@@ -14,9 +14,15 @@ class AuthService
     public function __construct(UserRepositoryInterface $userRepo) {
         $this->userRepo = $userRepo;
     }
-    public function registerUser(array $data) {
-        $data['password'] = Hash::make($data['password']);
+    public function registerUser(array $data)
+    {
+        // Only hash password if provided
+        if (!empty($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        }
+
         $data['role'] = 'user';
+
         return $this->userRepo->create($data);
     }
 

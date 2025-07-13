@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
     Route::post('register', [AuthenticationController::class, 'register'])->name('user.register');
+    Route::post('verify', [AuthenticationController::class, 'verifyPhone'])->name('verify');
+    Route::post('verify-otp', [AuthenticationController::class, 'verifyOtp'])->name('verify-otp');
     Route::post('login', [AuthenticationController::class, 'login'])->name('user.login');
     Route::post('logout', [AuthenticationController::class, 'logout'])->name('user.logout')->middleware('auth:sanctum');
 

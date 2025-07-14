@@ -151,6 +151,7 @@ class AuthenticationController extends Controller
 
     public function verifyPhone(Request $request)
     {
+        dd(1);
         $request->validate([
             'phone' => 'required|string'
         ]);

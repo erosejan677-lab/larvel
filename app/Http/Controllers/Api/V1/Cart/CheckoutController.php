@@ -124,4 +124,34 @@ class CheckoutController extends Controller
             'data'    => $order
         ], 200);
     }
+    public function getOrderForGuest(Request $request)
+    {
+        $orderId = $request->orderId;
+        $guestId = $request->guest_id;
+
+        // Get the order for this guest
+        $order = Order::where('id', $orderId)
+            ->where('buyer_id', $guestId)
+            ->with('items.product', 'seller')
+            ->firstOrFail();
+
+
+        // Fetch the address directly by delivery_address_id and user_id = guest_id (UUID)
+        $address = \DB::table('addresses')
+            ->where('id', $order->delivery_address_id)
+            ->where('user_id', $guestId) // guestId is UUID for guest addresses
+            ->first();
+
+
+        // Convert to array and attach
+        $orderData = $order->toArray();
+        $orderData['delivery_address'] = $address;
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Order details retrieved successfully',
+            'data'    => $orderData
+        ], 200);
+    }
+
 }

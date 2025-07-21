@@ -17,4 +17,6 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('cart/checkout')->group
 
 Route::prefix('cart/checkout')->group(function () {
     Route::post('create/guest', [CheckoutController::class, 'checkoutGuest']);
+    Route::get('orders/guest/{orderId}', [CheckoutController::class, 'getOrderForGuest']);
+
 });

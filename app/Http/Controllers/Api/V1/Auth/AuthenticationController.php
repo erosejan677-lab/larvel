@@ -150,10 +150,17 @@ class AuthenticationController extends Controller
 
     public function verifyPhone(Request $request)
     {
-        logger($request->all());
         $request->validate([
             'phone' => 'required|string'
         ]);
+
+        $existingUser = User::where('phone', $request->phone)->first();
+
+        if ($existingUser) {
+            return response()->json([
+                'message' => 'Account already exists, please login.'
+            ], 409); // 409 Conflict
+        }
 
         $otp = rand(100000, 999999); // You can still generate it for later use
         $expiresAt = Carbon::now()->addSeconds(60);

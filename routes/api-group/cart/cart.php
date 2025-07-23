@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\Cart\CartController;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('user/cart')->middleware(['auth:sanctum', 'role:user'])->group(function () {
     // Retrieve the authenticated user's cart.
@@ -18,7 +18,8 @@ Route::prefix('user/cart')->middleware(['auth:sanctum', 'role:user'])->group(fun
 
     // Clear the entire cart.
     Route::delete('clear', [CartController::class, 'clear']);
-    Route::put('items/increment', [CartController::class, 'incrementCartItem']);
+
+    Route::put('items/increment/item', [CartController::class, 'incrementCartItem']);
 
 });
 Route::prefix('user/cart')->group(function () {

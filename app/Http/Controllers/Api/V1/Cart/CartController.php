@@ -184,6 +184,7 @@ class CartController extends Controller
 
     public function incrementCartItemGuest(Request $request)
     {
+
         $validated = $request->validate([
             'guestID' => 'required',
             'productID' => 'required',
@@ -214,8 +215,4 @@ class CartController extends Controller
     }
 
 
-    public function decrementCartItem(Request $request, $itemId)
-    {
-
-    }
 }

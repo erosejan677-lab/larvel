@@ -5,8 +5,8 @@ return [
     'paths' => ['api/*'],
     'allowed_methods' => ['*'],
     'allowed_origins' =>
-        ['https://closyyyy.com',
-        'http://localhost:5182'],
+        ['https://closyyyy.com/',
+        'http://localhost:5182/'],
     'allowed_origins_patterns' => [],
     'exposed_headers' => [],
     'max_age' => 0,

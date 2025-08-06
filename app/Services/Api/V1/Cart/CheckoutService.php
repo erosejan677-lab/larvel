@@ -126,7 +126,7 @@ class CheckoutService
             }
 
             $postexResponse = $this->postexService->sendOrderToPostex($order, $itemsData, $products, $buyerTotal);
-            \Log::info('Postex Response', $postexResponse);
+
 
             //buyer sms
             $trackingNumber = $postexResponse['dist']['trackingNumber'] ?? null;
@@ -348,7 +348,7 @@ class CheckoutService
             $postexResponse = $this->postexService->sendOrderToPostex($order, $itemsData, $products, $buyerTotal);
 
 
-            \Log::info('Postex Response', $postexResponse);
+
 
 
             //buyer sms

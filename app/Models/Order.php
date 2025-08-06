@@ -25,6 +25,7 @@ class Order extends Model
         'expected_delivery_date',
         'actual_delivery_date',
         'tracking_no',
+        'postex_tracking_no',
         'total_seller_payout',
         'market_threshold_applied'
     ];

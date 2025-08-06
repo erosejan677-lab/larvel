@@ -17,11 +17,11 @@
         <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
             <tr>
                 <td style="padding: 8px; font-weight: bold;">Buyer Name:</td>
-                <td style="padding: 8px;">{{ $order->buyer->first_name }} {{ $order->buyer->last_name }}</td>
+                <td style="padding: 8px;">{{ $order->buyer->first_name ?? $order->guest_name }} {{ $order->buyer->last_name ?? ''}}</td>
             </tr>
             <tr>
                 <td style="padding: 8px; font-weight: bold;">Buyer Email:</td>
-                <td style="padding: 8px;">{{ $order->buyer->email }}</td>
+                <td style="padding: 8px;">{{ $order->buyer->email ?? $order->guest_email}}</td>
             </tr>
             <tr>
                 <td style="padding: 8px; font-weight: bold;">Tracking No:</td>

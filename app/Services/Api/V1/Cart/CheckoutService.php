@@ -243,7 +243,7 @@ class CheckoutService
                 'address_line_2' => $guestInfo['address_line_2'] ?? null,
                 'city' => $guestInfo['city'],
                 'state_province_or_region' => $guestInfo['state_province_or_region'] ?? null,
-                'zip_or_postal_code' => $guestInfo['postal_code'],
+                'zip_or_postal_code' => 00000,
                 'address_type' => 'shipping',
                 'is_guest_address' => 1,
             ]);

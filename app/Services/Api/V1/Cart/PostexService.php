@@ -20,7 +20,6 @@ class PostexService
                     $address->address_line_2,
                     $address->city,
                     $address->state_province_or_region,
-                    $address->zip_or_postal_code
                 ])
                     ->filter() // Remove null/empty values
                     ->implode(', ')

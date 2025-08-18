@@ -34,8 +34,26 @@ Route::prefix('public/products')->group(function () {
 
     // Search & filter products (by query parameters) with pagination.
     // Example: /v1/listing/public/products/search?category_id=1&brand_id=2&min_price=100&max_price=500&page=1
-    Route::get('search', [ProductController::class, 'search']);
+//    Route::get('search', [ProductController::class, 'search']);
 
     // Get a single product details (by ID)
     Route::get('{id}', [ProductController::class, 'showSingle']);
+
+
+    Route::get('search', [ProductController::class, 'newProductsFetch']);
+
+    // Slug-mode (your working pattern):
+    Route::get('search/{group}/{category?}', [ProductController::class, 'newProductsFetch']);
+
+    // Filter sources
+    Route::get('categories/{group}',  [ProductController::class, 'listCategoriesByGroup']);
+    Route::get('brands/{group}',      [ProductController::class, 'listBrandsByGroup']);
+    Route::get('the/conditions',          [ProductController::class, 'listConditions']);
+    Route::get('the/sizes',               [ProductController::class, 'listSizes']);
+
+    //products by category
+    Route::get('the/men', [ProductController::class, 'getMenProducts']);
+    Route::get('the/women', [ProductController::class, 'getWomenProducts']);
+    Route::get('the/kids', [ProductController::class, 'getKidProducts']);
+
 });

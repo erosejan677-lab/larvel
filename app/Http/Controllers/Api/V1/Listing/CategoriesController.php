@@ -16,6 +16,7 @@ class CategoriesController extends Controller
      */
     public function index(Request $request)
     {
+
         // Group the categories by the 'group' field (Men, Women, Kids, Everything else)
         $categoriesQuery = Category::query();
 
@@ -29,7 +30,7 @@ class CategoriesController extends Controller
     }
 
     public function show($id) {
-        $category = Category::find($id);
+               $category = Category::find($id);
         return $this->successResponse($category);
     }
 }

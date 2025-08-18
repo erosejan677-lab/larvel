@@ -520,7 +520,8 @@ class ProductController extends Controller
 
     public function getMenProducts()
     {
-        $products = Product::whereHas('category', function ($query) {
+        $products = Product::with(['user', 'category', 'brand', 'condition', 'photos', 'address', 'size'])
+        ->whereHas('category', function ($query) {
             $query->where('group', 'Men');
         })
             ->orderBy('created_at', 'desc')
@@ -533,7 +534,8 @@ class ProductController extends Controller
 
     public function getWomenProducts()
     {
-        $products = Product::whereHas('category', function ($query) {
+        $products = Product::with(['user', 'category', 'brand', 'condition', 'photos', 'address', 'size'])
+            ->whereHas('category', function ($query) {
             $query->where('group', 'Women');
         })
             ->orderBy('created_at', 'desc')
@@ -545,7 +547,8 @@ class ProductController extends Controller
 
     public function getKidProducts()
     {
-        $products = Product::whereHas('category', function ($query) {
+        $products = Product::with(['user', 'category', 'brand', 'condition', 'photos', 'address', 'size'])
+            ->whereHas('category', function ($query) {
             $query->where('group', 'Kids');
         })
             ->orderBy('created_at', 'desc')

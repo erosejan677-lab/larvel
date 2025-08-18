@@ -37,7 +37,7 @@ Route::prefix('public/products')->group(function () {
 //    Route::get('search', [ProductController::class, 'search']);
 
     // Get a single product details (by ID)
-    Route::get('{id}', [ProductController::class, 'showSingle']);
+    Route::get('/{brand}/{slug}', [ProductController::class, 'showSingle']);
 
 
     Route::get('search', [ProductController::class, 'newProductsFetch']);

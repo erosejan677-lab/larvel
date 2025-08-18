@@ -113,8 +113,10 @@ class ProductController extends Controller
     }
 
 
-    public function showSingle($id)
+    public function showSingle($brand, $slug)
     {
+        $id = last(explode('-', $slug));
+
         $product = Product::with(['user', 'category', 'brand', 'condition', 'photos', 'address', 'size'])
             ->where('approval_status', '!=', 'pending')
             ->find($id);

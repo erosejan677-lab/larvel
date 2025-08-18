@@ -29,13 +29,15 @@ Route::prefix('auth/products')->middleware(['auth:sanctum', 'role:user'])->group
 
 // Public product endpoints:
 Route::prefix('public/products')->group(function () {
-    // Get all public products with relationships (existing)
-    Route::get('show', [ProductController::class, 'publicProducts']);
-
     //products by category
     Route::get('the/mens', [ProductController::class, 'getMenProducts']);
     Route::get('the/womens', [ProductController::class, 'getWomenProducts']);
     Route::get('the/kids', [ProductController::class, 'getKidProducts']);
+
+    // Get all public products with relationships (existing)
+    Route::get('show', [ProductController::class, 'publicProducts']);
+
+
 
     // Search & filter products (by query parameters) with pagination.
     // Example: /v1/listing/public/products/search?category_id=1&brand_id=2&min_price=100&max_price=500&page=1
@@ -51,10 +53,11 @@ Route::prefix('public/products')->group(function () {
     Route::get('search/{group}/{category?}', [ProductController::class, 'newProductsFetch']);
 
     // Filter sources
-    Route::get('categories/{group}',  [ProductController::class, 'listCategoriesByGroup']);
-    Route::get('brands/{group}',      [ProductController::class, 'listBrandsByGroup']);
-    Route::get('the/conditions',          [ProductController::class, 'listConditions']);
-    Route::get('the/sizes',               [ProductController::class, 'listSizes']);
+    Route::get('the/categories/{group}',  [ProductController::class, 'listCategoriesByGroup']);
+    Route::get('the/brands/{group}',      [ProductController::class, 'listBrandsByGroup']);
+
+    Route::get('the/products/conditions',          [ProductController::class, 'listConditions']);
+    Route::get('the/products/sizes',               [ProductController::class, 'listSizes']);
 
 
 

@@ -32,6 +32,11 @@ Route::prefix('public/products')->group(function () {
     // Get all public products with relationships (existing)
     Route::get('show', [ProductController::class, 'publicProducts']);
 
+    //products by category
+    Route::get('the/mens', [ProductController::class, 'getMenProducts']);
+    Route::get('the/womens', [ProductController::class, 'getWomenProducts']);
+    Route::get('the/kids', [ProductController::class, 'getKidProducts']);
+
     // Search & filter products (by query parameters) with pagination.
     // Example: /v1/listing/public/products/search?category_id=1&brand_id=2&min_price=100&max_price=500&page=1
 //    Route::get('search', [ProductController::class, 'search']);
@@ -51,9 +56,6 @@ Route::prefix('public/products')->group(function () {
     Route::get('the/conditions',          [ProductController::class, 'listConditions']);
     Route::get('the/sizes',               [ProductController::class, 'listSizes']);
 
-    //products by category
-    Route::get('the/men', [ProductController::class, 'getMenProducts']);
-    Route::get('the/women', [ProductController::class, 'getWomenProducts']);
-    Route::get('the/kids', [ProductController::class, 'getKidProducts']);
+
 
 });

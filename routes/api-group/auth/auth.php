@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\AuthenticationController;
+use App\Http\Controllers\Auth\ReviewLoginController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -25,4 +26,6 @@ Route::prefix('auth')->group(function () {
     // Note: This route needs frontend handling.
     Route::get('email/verify/{id}/{hash}', [AuthenticationController::class, 'verifyEmail'])->name('verification.verify'); // verify the email
 
+    Route::post('review-login', [ReviewLoginController::class, 'exchange']);
+    Route::get('review-login/redirect/{token}', [ReviewLoginController::class, 'redirectLogin']);
 });

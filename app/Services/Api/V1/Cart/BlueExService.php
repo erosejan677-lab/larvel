@@ -29,21 +29,21 @@ class BlueExService
             // ---- Shipper (seller) fields ----
             // Fallbacks come from config if seller fields are missing
             $seller         = $order->seller;
-            $shipperName    = config('services.blueex.default_shipper_name', 'Closyyyy Seller');
-            $shipperEmail   = $seller->email ?? config('services.blueex.default_shipper_email', 'noreply@closyyyy.test');
-            $shipperPhone   = $seller->phone ?? config('services.blueex.default_shipper_phone', '03000000000');
+            $shipperName    = config('services.blueex.default_shipper_name', 'Closyyyy Warehouse');
+            $shipperEmail   = $seller->email ?? config('services.blueex.default_shipper_email', 'sikandera84@gmail.com');
+            $shipperPhone   = $seller->phone ?? config('services.blueex.default_shipper_phone', '03244549895');
 
             // If you store seller address in DB, plug it here; otherwise use config fallback
             $shipperAddress = $this->buildFullAddress([
-                $seller->address_line_1 ?? config('services.blueex.default_shipper_address_line_1', 'Pickup Location'),
+                $seller->address_line_1 ?? config('services.blueex.default_shipper_address_line_1', '370-D-DHA-phase-8-Ex-park-view-Lahore'),
                 $seller->address_line_2 ?? null,
-                $seller->city ?? config('services.blueex.default_shipper_city', 'Karachi'),
+                $seller->city ?? config('services.blueex.default_shipper_city', 'Lahore'),
                 $seller->state ?? null,
             ]);
 
             // ---- City codes (BlueEX expects codes like KHI, LHE, ISB, etc.) ----
             $customerCityCode = $this->cityToBlueExCode($address->city ?? '');
-            $shipperCityCode  = $this->cityToBlueExCode($seller->city ?? config('services.blueex.default_shipper_city', 'Karachi'));
+            $shipperCityCode  = $this->cityToBlueExCode($seller->city ?? config('services.blueex.default_shipper_city', 'Lahore'));
 
             // ---- Items & weight ----
             $defaultItemWeight = (float) config('services.blueex.default_item_weight', 0.5); // kg
@@ -60,13 +60,10 @@ class BlueExService
                 $totalWeightKg += ($w * $qty);
 
                 $productsDetail[] = [
-                    'product_code'      => (string) ($p->id ?? $p->sku ?? 'NA'),
                     'product_name'      => (string) ($p->title ?? 'Item'),
                     'product_price'     => (string) ($p->price ?? 0),
                     'product_weight'    => (string) $w,
                     'product_quantity'  => (string) $qty,
-                    'product_variations'=> (string) ($p->variation ?? $p->size ?? $p->color ?? ''),
-                    'sku_code'          => (string) ($p->sku ?? ($p->id ?? 'NA')),
                 ];
             }
 

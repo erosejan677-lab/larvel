@@ -70,10 +70,13 @@ return [
         'default_total_weight'  => env('BLUEEX_DEFAULT_TOTAL_WEIGHT', 1.0),
 
         // shipper fallbacks if seller profile lacks address
-        'default_shipper_name'    => env('BLUEEX_DEFAULT_SHIPPER_NAME', 'Closyyyy Seller'),
-        'default_shipper_email'   => env('BLUEEX_DEFAULT_SHIPPER_EMAIL', 'noreply@closyyyy.test'),
-        'default_shipper_phone'   => env('BLUEEX_DEFAULT_SHIPPER_PHONE', '03000000000'),
-        'default_shipper_address_line_1' => env('BLUEEX_DEFAULT_SHIPPER_ADDR1', 'Pickup Location'),
-        'default_shipper_city'    => env('BLUEEX_DEFAULT_SHIPPER_CITY', 'Karachi'),
+        'default_shipper_name'    => env('BLUEEX_DEFAULT_SHIPPER_NAME', 'Closyyyy Warehouse'),
+        'default_shipper_email'   => env('BLUEEX_DEFAULT_SHIPPER_EMAIL', 'sikandera84@gmail.com'),
+        'default_shipper_phone'   => env('BLUEEX_DEFAULT_SHIPPER_PHONE', '03244549895'),
+        'default_shipper_address_line_1' => env('BLUEEX_DEFAULT_SHIPPER_ADDR1', '370-D-DHA-phase-8-Ex-park-view-Lahore'),
+        'default_shipper_city'    => env('BLUEEX_DEFAULT_SHIPPER_CITY', 'Lahore'),
     ],
+
+    'magic_link' => env('MAGIC_LINK_BASE'),
+    'frontend_url' => env('FRONTEND_URL'),
 ];

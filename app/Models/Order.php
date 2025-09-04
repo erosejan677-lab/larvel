@@ -28,7 +28,8 @@ class Order extends Model
         'postex_tracking_no',
         'blueex_tracking_no',
         'total_seller_payout',
-        'market_threshold_applied'
+        'market_threshold_applied',
+        'asked_for_review'
     ];
 
     protected $casts = [

@@ -19,6 +19,7 @@ class ShopController extends Controller
      */
     public function getUserShop(Request $request, $userId)
     {
+
         $user = User::findOrFail($userId);
         $filter = $request->query('filter', 'all');
 
@@ -43,8 +44,8 @@ class ShopController extends Controller
             // default: all products
         }
 
-        $perPage = $request->query('per_page', 10);
-        $products = $query->paginate($perPage);
+        $perPage = $request->query('per_page', 50);
+        $products = $query->latest()->paginate($perPage);
 
         $shop = Shop::where('user_id', $userId)->first();
 

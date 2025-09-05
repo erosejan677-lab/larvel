@@ -20,9 +20,6 @@ class SendReviewRequests extends Command
 
     public function handle(): int
     {
-        // Optional: add a nullable column 'review_asked_at' to orders to avoid re-sending
-        // Schema::table('orders', fn($t) => $t->timestamp('review_asked_at')->nullable());
-
         $orders = Order::query()
             ->where('asked_for_review', 0)
             ->with(['buyer:id,email,first_name'])   // eager-load buyer to avoid N+1

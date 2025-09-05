@@ -83,7 +83,7 @@ class BlueExService
             $insuranceVal  = config('services.blueex.insurance_value', '0');
             $testBit       = config('services.blueex.testbit', 'Y');        // Y in sandbox
             $cnGenerate    = config('services.blueex.cn_generate', 'Y');    // get CN back
-            $multiPickup   = config('services.blueex.multi_pickup', 'Y');
+            $multiPickup   = config('services.blueex.multi_pickup', 'N');
 
             // ---- Payload per BlueEX docs ----
             $payload = [

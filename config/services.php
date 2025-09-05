@@ -65,7 +65,7 @@ return [
         'insurance_value'       => env('BLUEEX_INSURANCE_VALUE', '0'),
         'testbit'               => env('BLUEEX_TESTBIT', 'Y'),
         'cn_generate'           => env('BLUEEX_CN_GENERATE', 'Y'),
-        'multi_pickup'          => env('BLUEEX_MULTI_PICKUP', 'Y'),
+        'multi_pickup'          => env('BLUEEX_MULTI_PICKUP', 'N'),
         'default_item_weight'   => env('BLUEEX_DEFAULT_ITEM_WEIGHT', 0.5),
         'default_total_weight'  => env('BLUEEX_DEFAULT_TOTAL_WEIGHT', 1.0),
 

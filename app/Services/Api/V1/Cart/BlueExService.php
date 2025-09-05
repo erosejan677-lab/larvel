@@ -101,7 +101,7 @@ class BlueExService
                 'customer_country'    => 'PK',
                 'customer_comment'    => 'Order from Closyyyy',
 
-                'shipping_charges'    => (string) ($order->delivery_fee ?? 0),
+                'shipping_charges'    => 0,
                 'payment_type'        => $paymentType,            // 'COD' or 'CC'
                 'service_code'        => $serviceCode,            // 'BE' sample
                 'total_order_amount'  => (string) $buyerTotal,

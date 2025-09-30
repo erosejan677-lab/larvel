@@ -22,5 +22,5 @@ Route::prefix('products/offers')->middleware(['auth:sanctum', 'role:user'])->gro
     Route::post('{offerId}/reject', [OfferController::class, 'rejectOffer']);
 
     // Counter an offer.
-    Route::post('{offerId}/counter', [OfferController::class, 'counterOffer']);
+    Route::post('{offerId}/counter-offer', [OfferController::class, 'counterOffer']);
 });

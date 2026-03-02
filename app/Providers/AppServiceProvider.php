@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Repositories\V1\Contracts\UserRepositoryInterface;
 use App\Repositories\V1\Eloquent\UserRepository;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Routing\UrlGenerator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,8 +20,11 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot(UrlGenerator $url): void
     {
-        //
+        // Force HTTPS in production
+        if (env('APP_ENV') == 'production') {
+            $url->forceScheme('https');
+        }
     }
 }

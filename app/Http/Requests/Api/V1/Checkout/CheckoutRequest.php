@@ -2,12 +2,12 @@
 
 namespace App\Http\Requests\Api\V1\Checkout;
 
-use App\Models\Offer;
-use Illuminate\Foundation\Http\FormRequest;
-
-use Illuminate\Validation\Rule;
 use App\Models\Cart;
+use App\Models\Offer;
 use App\Models\Product;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
 class CheckoutRequest extends FormRequest
 {
     public function authorize()

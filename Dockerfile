@@ -2,6 +2,10 @@
 COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
+RUN php artisan config:clear
+RUN php artisan config:cache
+RUN php artisan route:clear
+RUN php artisan view:clear
 
 # Image config
 ENV SKIP_COMPOSER 1

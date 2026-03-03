@@ -2,6 +2,8 @@
 
 COPY . .
 
+RUN composer install --no-dev --optimize-autoloader
+
 # Image config
 ENV SKIP_COMPOSER 1
 ENV WEBROOT /var/www/html/public

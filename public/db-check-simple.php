@@ -10,14 +10,19 @@ echo "Autoload loaded...\n";
 $app = require_once __DIR__.'/../bootstrap/app.php';
 echo "App loaded...\n";
 
-use Illuminate\Support\Facades\DB;
+// Boot the application
+$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+$response = $kernel->handle(
+    $request = Illuminate\Http\Request::capture()
+);
+echo "Application booted...\n";
 
 try {
-    echo "Testing database...\n";
-    $pdo = DB::connection()->getPdo();
+    // Now use DB directly without facade
+    $pdo = $app['db']->connection()->getPdo();
     echo "✅ Connected!\n";
     
-    $tables = DB::select('SHOW TABLES');
+    $tables = $app['db']->select('SHOW TABLES');
     echo "Tables found: " . count($tables) . "\n";
     
     foreach($tables as $table) {

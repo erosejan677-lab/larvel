@@ -9,6 +9,14 @@ RUN php artisan config:cache
 RUN php artisan route:clear
 RUN php artisan view:clear
 
+# Nuclear option - clear absolutely everything
+RUN rm -f bootstrap/cache/*.php
+RUN php artisan config:clear
+RUN php artisan route:clear
+RUN php artisan cache:clear
+RUN php artisan view:clear
+RUN php artisan optimize:clear
+
 # Image config
 ENV SKIP_COMPOSER 1
 ENV WEBROOT /var/www/html/public
@@ -23,6 +31,5 @@ ENV LOG_CHANNEL stderr
 
 # Allow composer to run as root
 ENV COMPOSER_ALLOW_SUPERUSER 1
-RUN touch /var/www/html/storage/logs/laravel.log
-RUN chmod 777 /var/www/html/storage/logs/laravel.log
+
 CMD ["/start.sh"]

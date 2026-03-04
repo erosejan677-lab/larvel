@@ -23,5 +23,6 @@ ENV LOG_CHANNEL stderr
 
 # Allow composer to run as root
 ENV COMPOSER_ALLOW_SUPERUSER 1
-
+RUN touch /var/www/html/storage/logs/laravel.log
+RUN chmod 777 /var/www/html/storage/logs/laravel.log
 CMD ["/start.sh"]

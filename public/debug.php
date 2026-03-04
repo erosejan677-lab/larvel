@@ -12,9 +12,9 @@ echo "Storage Path: " . storage_path() . "\n";
 echo "Storage Writable: " . (is_writable(storage_path()) ? 'Yes' : 'No') . "\n";
 
 echo "\n=== Database Config ===\n";
-echo "DB_HOST: " . env('DB_HOST') . "\n";
-echo "DB_DATABASE: " . env('DB_DATABASE') . "\n";
-echo "DB_USERNAME: " . env('DB_USERNAME') . "\n";
+echo "DB_HOST: " . config('database.connections.mysql.host') . "\n";
+echo "DB_DATABASE: " . config('database.connections.mysql.database') . "\n";
+echo "DB_USERNAME: " . config('database.connections.mysql.username') . "\n";
 
 echo "\n=== Testing Database ===\n";
 try {
@@ -27,6 +27,6 @@ try {
 }
 
 echo "\n=== APP Key ===\n";
-echo "APP_KEY: " . env('APP_KEY') . "\n";
-echo "Key length: " . strlen(env('APP_KEY')) . "\n";
+echo "APP_KEY: " . config('app.key') . "\n";
+echo "Key length: " . strlen(config('app.key')) . "\n";
 echo "</pre>";

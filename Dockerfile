@@ -1,8 +1,8 @@
-﻿FROM richarvey/nginx-php-fpm:3.1.6
+﻿# Production Dockerfile - migrations removed
+FROM richarvey/nginx-php-fpm:3.1.6
 COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
-RUN php artisan migrate --force || true
 RUN php artisan storage:link
 RUN php artisan config:clear
 RUN php artisan config:cache

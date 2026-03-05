@@ -1,56 +1,154 @@
 <?php
 
-use App\Http\Controllers\Api\V1\Listing\CategoriesController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| API Routes - DIAGNOSTIC VERSION
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
 */
 
-// Simple test route - no includes, no complexity
+// Simple test route
 Route::get('/laravel-test', function () {
     return response()->json([
-        'laravel_working' => true,
-        'database_products' => \DB::table('products')->count(),
-        'message' => 'Laravel API is working!'
+        'message' => 'Base API is working!'
     ]);
 });
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-
+// Try loading each file one by one with error handling
 Route::prefix('v1')->group(function () {
-    // Use require_once to prevent multiple inclusions
-    require_once base_path('routes/api-group/auth/auth.php');
-    require_once base_path('routes/api-group/auth/social-auth.php');
-    require_once base_path('routes/api-group/user/preferences.php');
     
+    // Test auth file
+    try {
+        require_once base_path('routes/api-group/auth/auth.php');
+        echo "Loaded: auth.php\n";
+    } catch (\Exception $e) {
+        echo "Error in auth.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test social-auth file
+    try {
+        require_once base_path('routes/api-group/auth/social-auth.php');
+        echo "Loaded: social-auth.php\n";
+    } catch (\Exception $e) {
+        echo "Error in social-auth.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test preferences file
+    try {
+        require_once base_path('routes/api-group/user/preferences.php');
+        echo "Loaded: preferences.php\n";
+    } catch (\Exception $e) {
+        echo "Error in preferences.php: " . $e->getMessage() . "\n";
+    }
+    
+    // For listing files
     Route::prefix('listing')->group(function () {
         $files = glob(base_path('routes/api-group/listing/*.php'));
         foreach ($files as $file) {
-            require_once $file;
+            try {
+                require_once $file;
+                echo "Loaded: " . basename($file) . "\n";
+            } catch (\Exception $e) {
+                echo "Error in " . basename($file) . ": " . $e->getMessage() . "\n";
+            }
         }
     });
     
-    require_once base_path('routes/api-group/user/address.php');
-    require_once base_path('routes/api-group/user/followers.php');
-    require_once base_path('routes/api-group/user/ratings.php');
-    require_once base_path('routes/api-group/user/shop.php');
-    require_once base_path('routes/api-group/user/users.php');
-    require_once base_path('routes/api-group/user/reviews.php');
-    require_once base_path('routes/api-group/cart/cart.php');
-    require_once base_path('routes/api-group/cart/checkout.php');
-    require_once base_path('routes/api-group/conversation/conversations.php');
-    require_once base_path('routes/api-group/user/bank.php');
-    require_once base_path('routes/api-group/activity/activity.php');
-    require_once base_path('routes/api-group/admin/admin-apis.php');
+    // Test address file
+    try {
+        require_once base_path('routes/api-group/user/address.php');
+        echo "Loaded: address.php\n";
+    } catch (\Exception $e) {
+        echo "Error in address.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test followers file
+    try {
+        require_once base_path('routes/api-group/user/followers.php');
+        echo "Loaded: followers.php\n";
+    } catch (\Exception $e) {
+        echo "Error in followers.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test ratings file
+    try {
+        require_once base_path('routes/api-group/user/ratings.php');
+        echo "Loaded: ratings.php\n";
+    } catch (\Exception $e) {
+        echo "Error in ratings.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test shop file
+    try {
+        require_once base_path('routes/api-group/user/shop.php');
+        echo "Loaded: shop.php\n";
+    } catch (\Exception $e) {
+        echo "Error in shop.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test users file
+    try {
+        require_once base_path('routes/api-group/user/users.php');
+        echo "Loaded: users.php\n";
+    } catch (\Exception $e) {
+        echo "Error in users.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test reviews file
+    try {
+        require_once base_path('routes/api-group/user/reviews.php');
+        echo "Loaded: reviews.php\n";
+    } catch (\Exception $e) {
+        echo "Error in reviews.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test cart file
+    try {
+        require_once base_path('routes/api-group/cart/cart.php');
+        echo "Loaded: cart.php\n";
+    } catch (\Exception $e) {
+        echo "Error in cart.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test checkout file
+    try {
+        require_once base_path('routes/api-group/cart/checkout.php');
+        echo "Loaded: checkout.php\n";
+    } catch (\Exception $e) {
+        echo "Error in checkout.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test conversation file
+    try {
+        require_once base_path('routes/api-group/conversation/conversations.php');
+        echo "Loaded: conversations.php\n";
+    } catch (\Exception $e) {
+        echo "Error in conversations.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test bank file
+    try {
+        require_once base_path('routes/api-group/user/bank.php');
+        echo "Loaded: bank.php\n";
+    } catch (\Exception $e) {
+        echo "Error in bank.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test activity file
+    try {
+        require_once base_path('routes/api-group/activity/activity.php');
+        echo "Loaded: activity.php\n";
+    } catch (\Exception $e) {
+        echo "Error in activity.php: " . $e->getMessage() . "\n";
+    }
+    
+    // Test admin file
+    try {
+        require_once base_path('routes/api-group/admin/admin-apis.php');
+        echo "Loaded: admin-apis.php\n";
+    } catch (\Exception $e) {
+        echo "Error in admin-apis.php: " . $e->getMessage() . "\n";
+    }
 });

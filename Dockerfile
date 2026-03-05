@@ -8,12 +8,29 @@ RUN php artisan config:clear
 RUN php artisan config:cache
 RUN php artisan route:clear
 RUN php artisan view:clear
-RUN php artisan optimize:clear
 
-# Test PHP-FPM configuration
-RUN php-fpm -t
+# Force correct permissions
+RUN chmod -R 777 storage bootstrap/cache
 
-# Image config - THESE ARE CRITICAL
+# Override nginx config completely
+RUN echo 'server { \
+    listen 80; \
+    root /var/www/html/public; \
+    index index.php index.html; \
+    \
+    location / { \
+        try_files $uri $uri/ /index.php?$query_string; \
+    } \
+    \
+    location ~ \.php$ { \
+        fastcgi_pass 127.0.0.1:9000; \
+        fastcgi_index index.php; \
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; \
+        include fastcgi_params; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
+
+# Image config
 ENV SKIP_COMPOSER 1
 ENV WEBROOT /var/www/html/public
 ENV PHP_ERRORS_STDERR 1
@@ -24,10 +41,6 @@ ENV REAL_IP_HEADER 1
 ENV APP_ENV production
 ENV APP_DEBUG false
 ENV LOG_CHANNEL stderr
-
-# Allow composer to run as root
 ENV COMPOSER_ALLOW_SUPERUSER 1
-# Copy custom nginx config
-COPY nginx-custom.conf /etc/nginx/conf.d/default.conf
 
 CMD ["/start.sh"]

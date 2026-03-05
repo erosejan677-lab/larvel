@@ -27,5 +27,7 @@ ENV LOG_CHANNEL stderr
 
 # Allow composer to run as root
 ENV COMPOSER_ALLOW_SUPERUSER 1
+# Copy custom nginx config
+COPY nginx-custom.conf /etc/nginx/conf.d/default.conf
 
 CMD ["/start.sh"]

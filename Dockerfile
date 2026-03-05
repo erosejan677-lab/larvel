@@ -11,25 +11,6 @@ RUN php artisan view:clear
 # Force correct permissions
 RUN chmod -R 777 storage bootstrap/cache
 
-# Create nginx conf.d directory and add config
-RUN mkdir -p /etc/nginx/conf.d && \
-    echo 'server { \
-    listen 80; \
-    root /var/www/html/public; \
-    index index.php index.html; \
-    \
-    location / { \
-        try_files $uri $uri/ /index.php?$query_string; \
-    } \
-    \
-    location ~ \.php$ { \
-        fastcgi_pass 127.0.0.1:9000; \
-        fastcgi_index index.php; \
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; \
-        include fastcgi_params; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
-
 # Image config
 ENV SKIP_COMPOSER 1
 ENV WEBROOT /var/www/html/public

@@ -1,5 +1,6 @@
 <?php
 
+// V2 - Fixed with direct file includes
 use App\Http\Controllers\Api\V1\Listing\CategoriesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;

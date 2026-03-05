@@ -12,8 +12,9 @@ RUN php artisan view:clear
 # Force correct permissions
 RUN chmod -R 777 storage bootstrap/cache
 
-# Override nginx config completely
-RUN echo 'server { \
+# Create nginx conf.d directory if it doesn't exist and add config
+RUN mkdir -p /etc/nginx/conf.d && \
+    echo 'server { \
     listen 80; \
     root /var/www/html/public; \
     index index.php index.html; \
@@ -36,11 +37,6 @@ ENV WEBROOT /var/www/html/public
 ENV PHP_ERRORS_STDERR 1
 ENV RUN_SCRIPTS 1
 ENV REAL_IP_HEADER 1
-
-# Laravel config
-ENV APP_ENV production
-ENV APP_DEBUG false
-ENV LOG_CHANNEL stderr
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
 CMD ["/start.sh"]

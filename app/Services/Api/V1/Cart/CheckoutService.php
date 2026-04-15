@@ -151,8 +151,25 @@ class CheckoutService
             $postexResponse = $this->postexService->sendOrderToPostex($order, $itemsData, $products, $buyerTotal);
             $blueEXResponse = $this->blueExService->sendOrderToBlueEx($order, $itemsData, $products, $buyerTotal);
 
-            \Log::info('Postex Response', $postexResponse);
-            \Log::info('BlueEX Response', $blueEXResponse);
+// this was orginal 
+// \Log::info('Postex Response', $postexResponse);
+// \Log::info('BlueEX Response', $blueEXResponse);
+
+
+
+
+          if (is_array($postexResponse)) {
+    \Log::info('Postex Response', $postexResponse);
+} else {
+    \Log::info('Postex Response', ['response' => $postexResponse]);
+}
+if (is_array($blueEXResponse)) {
+    \Log::info('BlueEX Response', $blueEXResponse);
+} else {
+    \Log::info('BlueEX Response', ['response' => $blueEXResponse]);
+}
+
+
 
             //buyer sms
 //            $trackingNumber = $postexResponse['dist']['trackingNumber'] ?? null;

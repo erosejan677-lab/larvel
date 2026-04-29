@@ -70,7 +70,6 @@ class CheckoutService
                         ->where('seller_id', $sellerId)
                         ->first();
 
-                    // Since validation in CheckoutRequest already checks this, the offer should exist
                     if (!$offer) {
                         throw new \Exception("Invalid or inactive offer for product ID {$item['product_id']}.");
                     }
@@ -120,12 +119,8 @@ class CheckoutService
                 'offer_id' => $offerId ?? null
             ]);
 
-            $order->load('items', 'items.product', 'buyer', 'seller');
-
-
             // 6) Insert order items via relationship
             $order->items()->createMany($itemsData);
-
 
             // 7) Log activity
             ActivityLogHelper::logOrderPlaced($order);
@@ -151,34 +146,27 @@ class CheckoutService
             $postexResponse = $this->postexService->sendOrderToPostex($order, $itemsData, $products, $buyerTotal);
             $blueEXResponse = $this->blueExService->sendOrderToBlueEx($order, $itemsData, $products, $buyerTotal);
 
-// this was orginal 
-// \Log::info('Postex Response', $postexResponse);
-// \Log::info('BlueEX Response', $blueEXResponse);
+            if (is_array($postexResponse)) {
+                \Log::info('Postex Response', $postexResponse);
+            } else {
+                \Log::info('Postex Response', ['response' => $postexResponse]);
+            }
+            if (is_array($blueEXResponse)) {
+                \Log::info('BlueEX Response', $blueEXResponse);
+            } else {
+                \Log::info('BlueEX Response', ['response' => $blueEXResponse]);
+            }
 
+            // Get tracking number safely
+            $trackingNumber = 'N/A';
+            if (is_array($blueEXResponse) && isset($blueEXResponse['cnno'])) {
+                $trackingNumber = $blueEXResponse['cnno'];
+            } elseif (is_array($postexResponse) && isset($postexResponse['dist']['trackingNumber'])) {
+                $trackingNumber = $postexResponse['dist']['trackingNumber'];
+            }
 
-
-
-          if (is_array($postexResponse)) {
-    \Log::info('Postex Response', $postexResponse);
-} else {
-    \Log::info('Postex Response', ['response' => $postexResponse]);
-}
-if (is_array($blueEXResponse)) {
-    \Log::info('BlueEX Response', $blueEXResponse);
-} else {
-    \Log::info('BlueEX Response', ['response' => $blueEXResponse]);
-}
-
-
-
-            //buyer sms
-//            $trackingNumber = $postexResponse['dist']['trackingNumber'] ?? null;
-            $trackingNumber = $blueEXResponse['cnno'] ?? null;
-
-
-            if (!$trackingNumber) {
-                \Log::warning('Tracking number not found in PostEx response:', $blueEXResponse);
-                $trackingNumber = 'N/A';
+            if ($trackingNumber == 'N/A') {
+                \Log::warning('Tracking number not found', ['postex' => $postexResponse, 'blueex' => $blueEXResponse]);
             }
 
             $messageData = [
@@ -197,10 +185,7 @@ if (is_array($blueEXResponse)) {
 
             try {
                 \Log::info('SendPK SMS payload:', $payload);
-
-                // Make the request and log both request and response
                 $response = Http::asForm()->post('https://sendpk.com/api/sms.php', $payload);
-
                 \Log::debug('SendPK API raw response:', [
                     'status' => $response->status(),
                     'body' => $response->body(),
@@ -209,7 +194,6 @@ if (is_array($blueEXResponse)) {
             } catch (\Exception $e) {
                 Log::error('Failed order sms: ' . $e->getMessage());
             }
-//            buyer sms
 
             //seller sms
             $messageData = [
@@ -227,10 +211,7 @@ if (is_array($blueEXResponse)) {
 
             try {
                 \Log::info('SendPK SMS payload:', $payload);
-
-                // Make the request and log both request and response
                 $response = Http::asForm()->post('https://sendpk.com/api/sms.php', $payload);
-
                 \Log::debug('SendPK API raw response:', [
                     'status' => $response->status(),
                     'body' => $response->body(),
@@ -239,10 +220,8 @@ if (is_array($blueEXResponse)) {
             } catch (\Exception $e) {
                 Log::error('Failed order sms: ' . $e->getMessage());
             }
-            //seller sms
 
-
-            // 9) Adjust buyer’s cart in one go
+            // 9) Adjust buyer's cart in one go
             $cart = Cart::firstOrCreate(['user_id' => $buyer->id]);
             $cartItemsById = $cart
                 ->items()
@@ -261,8 +240,6 @@ if (is_array($blueEXResponse)) {
                 }
             }
 
-
-            // 11) Return order with its items eager-loaded
             return $order->load('items');
         });
     }
@@ -280,7 +257,7 @@ if (is_array($blueEXResponse)) {
             $cartItems,
             $guestInfo
         ) {
-            //–– 0) Create the one-off Address for this guest
+            // Create the one-off Address for this guest
             $address = Address::create([
                 'user_id' => $guestId,
                 'address_line_1' => $guestInfo['address'],
@@ -292,10 +269,9 @@ if (is_array($blueEXResponse)) {
                 'is_guest_address' => 1,
             ]);
 
-
             $deliveryAddressId = $address->id;
 
-            //–– 1) Lock & fetch the seller’s products
+            // Lock & fetch the seller's products
             $productIds = collect($cartItems)->pluck('product_id')->all();
             $products = Product::whereIn('id', $productIds)
                 ->where('user_id', $sellerId)
@@ -307,7 +283,7 @@ if (is_array($blueEXResponse)) {
                 throw new \Exception("One or more products were not found for this seller.");
             }
 
-            //–– 2) Build items payload & subtotal
+            // Build items payload & subtotal
             $now = now();
             $subtotal = 0;
             $itemsData = [];
@@ -331,26 +307,24 @@ if (is_array($blueEXResponse)) {
                 ];
             }
 
-            //–– 3) Fees lookup
+            // Fees lookup
             $fees = Fees::whereIn('fee_type', ['delivery', 'platform', 'market_threshold'])
                 ->pluck('fee_amount', 'fee_type');
             $deliveryFee = $fees['delivery'] ?? 0;
             $platformFeeRate = $fees['platform'] ?? 0;
 
-            //–– 4) Totals
+            // Totals
             $buyerTotal = $subtotal + $deliveryFee;
             $platformFeeAmount = round($subtotal * $platformFeeRate, 2);
             $sellerPayout = round($subtotal - $platformFeeAmount, 2);
 
-            //–– 5) Create the Order (note: buyer_id = null, guest_id = UUID)
+            // Create the Order
             $order = Order::create([
                 'buyer_id' => $guestId,
-
                 'guest_name' => $guestInfo['first_name'] . ' ' . $guestInfo['last_name'],
                 'guest_phone' => $guestInfo['phone'],
                 'guest_email' => $guestInfo['email'],
                 'is_guest_order' => 1,
-
                 'seller_id' => $sellerId,
                 'subtotal' => $subtotal,
                 'delivery_fee' => $deliveryFee,
@@ -364,13 +338,10 @@ if (is_array($blueEXResponse)) {
                 'market_threshold_applied' => 0,
             ]);
 
-            $order->load('items', 'items.product', 'seller');
-
-            //–– 6) Insert order items
+            // Insert order items
             $order->items()->createMany($itemsData);
 
-            //–– 7) Activity log + emails
-//            ActivityLogHelper::logOrderPlaced($order);
+            // Activity log + emails
             try {
                 Mail::to($order->seller->email)->send(new OrderSummaryToSeller($order));
                 Mail::to(config('app.admin_email'))->send(new OrderSummaryToAdmin($order));
@@ -378,8 +349,7 @@ if (is_array($blueEXResponse)) {
                 Log::error('Failed order emails: ' . $e->getMessage());
             }
 
-
-            //–– 8) Update stock
+            // Update stock
             foreach ($cartItems as $item) {
                 $p = $products[$item['product_id']];
                 $newLeft = $p->quantity_left - $item['quantity'];
@@ -392,30 +362,39 @@ if (is_array($blueEXResponse)) {
             $postexResponse = $this->postexService->sendOrderToPostex($order, $itemsData, $products, $buyerTotal);
             $blueEXResponse = $this->blueExService->sendOrderToBlueEx($order, $itemsData, $products, $buyerTotal);
 
-            \Log::info('Postex Response', $postexResponse);
-            \Log::info('BlueEX Response', $blueEXResponse);
-
-
-
-            //buyer sms
-//            $trackingNumber = $postexResponse['dist']['trackingNumber'] ?? null;
-            $trackingNumber = $blueEXResponse['cnno'] ?? null;
-
-
-            if (!$trackingNumber) {
-                \Log::warning('Tracking number not found in PostEx response:', $postexResponse);
-                $trackingNumber = 'N/A';
+            if (is_array($postexResponse)) {
+                \Log::info('Postex Response', $postexResponse);
+            } else {
+                \Log::info('Postex Response', ['response' => $postexResponse]);
+            }
+            if (is_array($blueEXResponse)) {
+                \Log::info('BlueEX Response', $blueEXResponse);
+            } else {
+                \Log::info('BlueEX Response', ['response' => $blueEXResponse]);
             }
 
+            // Get tracking number safely
+            $trackingNumber = 'N/A';
+            if (is_array($blueEXResponse) && isset($blueEXResponse['cnno'])) {
+                $trackingNumber = $blueEXResponse['cnno'];
+            } elseif (is_array($postexResponse) && isset($postexResponse['dist']['trackingNumber'])) {
+                $trackingNumber = $postexResponse['dist']['trackingNumber'];
+            }
+
+            if ($trackingNumber == 'N/A') {
+                \Log::warning('Tracking number not found', ['postex' => $postexResponse, 'blueex' => $blueEXResponse]);
+            }
+
+            // Buyer SMS
             $messageData = [
-                'name' => $order['guest_name'] ?? $order->buyer->first_name ?? '',
+                'name' => $order->guest_name ?? '',
                 'trackingID' => $trackingNumber,
             ];
 
             $payload = [
                 'api_key' => config('services.sendpk.api_key'),
                 'sender' => 'Closyyyy',
-                'mobile' => $order['guest_phone'] ?? $order->buyer->phone ?? '',
+                'mobile' => $order->guest_phone ?? '',
                 'template_id' => 10119,
                 'message' => json_encode($messageData),
                 'format' => 'json',
@@ -423,10 +402,7 @@ if (is_array($blueEXResponse)) {
 
             try {
                 \Log::info('SendPK SMS payload:', $payload);
-
-                // Make the request and log both request and response
                 $response = Http::asForm()->post('https://sendpk.com/api/sms.php', $payload);
-
                 \Log::debug('SendPK API raw response:', [
                     'status' => $response->status(),
                     'body' => $response->body(),
@@ -435,9 +411,8 @@ if (is_array($blueEXResponse)) {
             } catch (\Exception $e) {
                 Log::error('Failed order sms: ' . $e->getMessage());
             }
-            //buyer sms
 
-            //seller sms
+            // Seller SMS
             $messageData = [
                 'name' => $order->seller->first_name ?? '',
             ];
@@ -453,10 +428,7 @@ if (is_array($blueEXResponse)) {
 
             try {
                 \Log::info('SendPK SMS payload:', $payload);
-
-                // Make the request and log both request and response
                 $response = Http::asForm()->post('https://sendpk.com/api/sms.php', $payload);
-
                 \Log::debug('SendPK API raw response:', [
                     'status' => $response->status(),
                     'body' => $response->body(),
@@ -465,10 +437,8 @@ if (is_array($blueEXResponse)) {
             } catch (\Exception $e) {
                 Log::error('Failed order sms: ' . $e->getMessage());
             }
-            //seller sms
 
-
-            //–– 9) Adjust guest cart
+            // Adjust guest cart
             $cart = GuestCart::firstOrCreate(['guest_id' => $guestId]);
             $byProduct = $cart->items()
                 ->whereIn('product_id', $productIds)
@@ -483,9 +453,7 @@ if (is_array($blueEXResponse)) {
                     : $ci->delete();
             }
 
-
             return $order;
         });
     }
-
 }

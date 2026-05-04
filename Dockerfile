@@ -32,8 +32,11 @@ RUN php artisan view:cache
 # Force correct permissions
 RUN chmod -R 777 storage bootstrap/cache
 
-# Completely remove all default Nginx configurations
+# Remove default Nginx config but keep the directory
 RUN rm -rf /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* /etc/nginx/nginx.conf
+
+# Create the conf.d directory if it doesn't exist
+RUN mkdir -p /etc/nginx/conf.d
 
 # Create a minimal nginx.conf
 RUN printf "user www-data;\n\

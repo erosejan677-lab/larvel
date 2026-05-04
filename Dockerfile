@@ -32,9 +32,26 @@ RUN php artisan view:cache
 # Force correct permissions
 RUN chmod -R 777 storage bootstrap/cache
 
-# Create nginx conf.d directory and remove any default configuration
-RUN mkdir -p /etc/nginx/conf.d && \
-    rm -rf /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
+# Completely remove all default Nginx configurations
+RUN rm -rf /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* /etc/nginx/nginx.conf
+
+# Create a minimal nginx.conf
+RUN printf "user www-data;\n\
+worker_processes auto;\n\
+pid /run/nginx.pid;\n\
+error_log /var/log/nginx/error.log;\n\
+events {\n\
+    worker_connections 768;\n\
+}\n\
+http {\n\
+    sendfile on;\n\
+    tcp_nopush on;\n\
+    types_hash_max_size 2048;\n\
+    include /etc/nginx/mime.types;\n\
+    default_type application/octet-stream;\n\
+    access_log /var/log/nginx/access.log;\n\
+    include /etc/nginx/conf.d/*.conf;\n\
+}\n" > /etc/nginx/nginx.conf
 
 # Create a clean Laravel Nginx configuration
 RUN printf "server {\n\
@@ -51,8 +68,8 @@ RUN printf "server {\n\
     location ~ \.php$ {\n\
         include fastcgi_params;\n\
         fastcgi_pass 127.0.0.1:9000;\n\
+        fastcgi_index index.php;\n\
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;\n\
-        fastcgi_param PATH_INFO \$fastcgi_path_info;\n\
     }\n\
 \n\
     location ~ /\.ht {\n\

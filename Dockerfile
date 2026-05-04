@@ -19,10 +19,10 @@ RUN echo "APP_NAME=larvel" >> .env && \
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Run migrations (add this - very important!)
+# Run migrations
 RUN php artisan migrate --force
 
-# Laravel optimizations (now with .env file present)
+# Laravel optimizations
 RUN php artisan storage:link
 RUN php artisan config:clear
 RUN php artisan config:cache
@@ -32,7 +32,7 @@ RUN php artisan view:cache
 # Force correct permissions
 RUN chmod -R 777 storage bootstrap/cache
 
-# Create nginx conf.d directory and add configuration
+# Create nginx conf.d directory and add configuration (IMPROVED VERSION)
 RUN mkdir -p /etc/nginx/conf.d && \
     printf "server {\n\
     listen 80;\n\
@@ -45,9 +45,13 @@ RUN mkdir -p /etc/nginx/conf.d && \
     }\n\
 \n\
     location ~ \.php$ {\n\
-        include fastcgi_params;\n\
+        try_files \$uri =404;\n\
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;\n\
         fastcgi_pass 127.0.0.1:9000;\n\
+        fastcgi_index index.php;\n\
+        include fastcgi_params;\n\
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;\n\
+        fastcgi_param PATH_INFO \$fastcgi_path_info;\n\
     }\n\
 \n\
     location ~ /\.ht {\n\

@@ -32,9 +32,13 @@ RUN php artisan view:cache
 # Force correct permissions
 RUN chmod -R 777 storage bootstrap/cache
 
-RUN mkdir -p /etc/nginx/conf.d && \
-    printf "server {\n\
-    listen 80;\n\
+# Remove any default Nginx configuration to prevent conflicts
+RUN rm -rf /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
+
+# Create a clean Laravel Nginx configuration
+RUN printf "server {\n\
+    listen 80 default_server;\n\
+    listen [::]:80 default_server;\n\
     server_name _;\n\
     root /var/www/html/public;\n\
     index index.php;\n\
@@ -44,10 +48,8 @@ RUN mkdir -p /etc/nginx/conf.d && \
     }\n\
 \n\
     location ~ \.php$ {\n\
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;\n\
-        fastcgi_pass 127.0.0.1:9000;\n\
-        fastcgi_index index.php;\n\
         include fastcgi_params;\n\
+        fastcgi_pass 127.0.0.1:9000;\n\
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;\n\
         fastcgi_param PATH_INFO \$fastcgi_path_info;\n\
     }\n\
@@ -55,9 +57,7 @@ RUN mkdir -p /etc/nginx/conf.d && \
     location ~ /\.ht {\n\
         deny all;\n\
     }\n\
-}\n" > /etc/nginx/conf.d/default.conf
-
-
+}\n" > /etc/nginx/conf.d/laravel.conf
 
 # Environment variables for the base image
 ENV SKIP_COMPOSER 1

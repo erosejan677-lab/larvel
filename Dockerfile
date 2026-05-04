@@ -4,15 +4,30 @@ FROM richarvey/nginx-php-fpm:3.1.6
 # Copy the entire project
 COPY . .
 
+# Create .env file with your database credentials
+RUN echo "APP_NAME=larvel" >> .env && \
+    echo "APP_ENV=production" >> .env && \
+    echo "APP_DEBUG=true" >> .env && \
+    echo "APP_KEY=base64:FPdiQPdfo0IIk91I5PwmUiykiL4UgdVI1KSCYmFO8c0=" >> .env && \
+    echo "DB_CONNECTION=pgsql" >> .env && \
+    echo "DB_HOST=aws-1-ap-south-1.pooler.supabase.com" >> .env && \
+    echo "DB_PORT=6543" >> .env && \
+    echo "DB_DATABASE=postgres" >> .env && \
+    echo "DB_USERNAME=postgres.ygwxwlbvgblvmxwuyaox" >> .env && \
+    echo "DB_PASSWORD=umairkhan816" >> .env
+
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Laravel optimizations
+# Run migrations (add this - very important!)
+RUN php artisan migrate --force
+
+# Laravel optimizations (now with .env file present)
 RUN php artisan storage:link
 RUN php artisan config:clear
 RUN php artisan config:cache
-RUN php artisan route:clear
-RUN php artisan view:clear
+RUN php artisan route:cache
+RUN php artisan view:cache
 
 # Force correct permissions
 RUN chmod -R 777 storage bootstrap/cache
@@ -40,7 +55,7 @@ RUN mkdir -p /etc/nginx/conf.d && \
     }\n\
 }\n" > /etc/nginx/conf.d/default.conf
 
-# Environment variables
+# Environment variables for the base image
 ENV SKIP_COMPOSER 1
 ENV WEBROOT /var/www/html/public
 ENV PHP_ERRORS_STDERR 1

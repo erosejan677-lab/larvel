@@ -14,7 +14,10 @@ RUN echo "APP_NAME=larvel" >> .env && \
     echo "DB_PORT=6543" >> .env && \
     echo "DB_DATABASE=postgres" >> .env && \
     echo "DB_USERNAME=postgres.ygwxwlbvgblvmxwuyaox" >> .env && \
-    echo "DB_PASSWORD=umairkhan816" >> .env
+    echo "DB_PASSWORD=umairkhan816" >> .env && \
+    echo "IMAGEKIT_PUBLIC_KEY=public_tA4ShnDPwLDHBswKfE0WTdDxU0k=" >> .env && \
+    echo "IMAGEKIT_PRIVATE_KEY=private_zFt9+YCaE4TSp8KU6qRhYDA8Sh4=" >> .env && \
+    echo "IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/closyyyy" >> .env
 
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader

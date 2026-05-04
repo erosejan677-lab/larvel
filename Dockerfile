@@ -32,20 +32,18 @@ RUN php artisan view:cache
 # Force correct permissions
 RUN chmod -R 777 storage bootstrap/cache
 
-# Create nginx conf.d directory and add configuration (IMPROVED VERSION)
 RUN mkdir -p /etc/nginx/conf.d && \
     printf "server {\n\
     listen 80;\n\
     server_name _;\n\
     root /var/www/html/public;\n\
-    index index.php index.html;\n\
+    index index.php;\n\
 \n\
     location / {\n\
         try_files \$uri \$uri/ /index.php?\$query_string;\n\
     }\n\
 \n\
     location ~ \.php$ {\n\
-        try_files \$uri =404;\n\
         fastcgi_split_path_info ^(.+\.php)(/.+)$;\n\
         fastcgi_pass 127.0.0.1:9000;\n\
         fastcgi_index index.php;\n\
@@ -58,6 +56,8 @@ RUN mkdir -p /etc/nginx/conf.d && \
         deny all;\n\
     }\n\
 }\n" > /etc/nginx/conf.d/default.conf
+
+
 
 # Environment variables for the base image
 ENV SKIP_COMPOSER 1

@@ -32,8 +32,9 @@ RUN php artisan view:cache
 # Force correct permissions
 RUN chmod -R 777 storage bootstrap/cache
 
-# Remove any default Nginx configuration to prevent conflicts
-RUN rm -rf /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
+# Create nginx conf.d directory and remove any default configuration
+RUN mkdir -p /etc/nginx/conf.d && \
+    rm -rf /etc/nginx/sites-enabled/default /etc/nginx/conf.d/default.conf
 
 # Create a clean Laravel Nginx configuration
 RUN printf "server {\n\

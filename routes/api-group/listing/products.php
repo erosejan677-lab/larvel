@@ -24,7 +24,6 @@ Route::prefix('auth/products')->middleware(['auth:sanctum', 'role:user'])->group
 
     // Delete a product
     Route::delete('{id}', [ProductController::class, 'destroy']);
-
 });
 
 // Public product endpoints:
@@ -37,15 +36,12 @@ Route::prefix('public/products')->group(function () {
     // Get all public products with relationships (existing)
     Route::get('show', [ProductController::class, 'publicProducts']);
 
-
-
     // Search & filter products (by query parameters) with pagination.
     // Example: /v1/listing/public/products/search?category_id=1&brand_id=2&min_price=100&max_price=500&page=1
 //    Route::get('search', [ProductController::class, 'search']);
 
     // Get a single product details (by ID)
     Route::get('/{brand}/{slug}', [ProductController::class, 'showSingle']);
-
 
     Route::get('the/search/{group?}/{category?}', [ProductController::class, 'newProductsFetch'])
         ->where([
@@ -60,6 +56,25 @@ Route::prefix('public/products')->group(function () {
     Route::get('the/products/conditions',          [ProductController::class, 'listConditions']);
     Route::get('the/products/sizes',               [ProductController::class, 'listSizes']);
 
-
-
+    // DEBUG ROUTE - Remove after fixing
+    // This route is now accessible at: /api/v1/listing/public/products/debug
+    Route::get('debug', function() {
+        try {
+            $products = DB::table('products')
+                ->where('approval_status', 'approved')
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Debug route works!',
+                'count' => $products->count(),
+                'products' => $products
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    });
 });

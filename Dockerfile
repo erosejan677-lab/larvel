@@ -32,13 +32,15 @@ RUN php artisan view:cache
 # Force correct permissions
 RUN chmod -R 777 storage bootstrap/cache
 
-# Remove default Nginx config but keep the directory
-RUN rm -rf /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* /etc/nginx/nginx.conf
+# Configure PHP-FPM to listen on port 9000
+RUN sed -i 's/^listen = .*/listen = 127.0.0.1:9000/' /usr/local/etc/php-fpm.d/www.conf && \
+    sed -i 's/^listen\.allowed_clients = .*/listen.allowed_clients = 127.0.0.1/' /usr/local/etc/php-fpm.d/www.conf
 
-# Create the conf.d directory if it doesn't exist
+# Remove default Nginx config and create new one
+RUN rm -rf /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* /etc/nginx/nginx.conf
 RUN mkdir -p /etc/nginx/conf.d
 
-# Create a minimal nginx.conf
+# Create minimal nginx.conf
 RUN printf "user www-data;\n\
 worker_processes auto;\n\
 pid /run/nginx.pid;\n\
@@ -56,7 +58,7 @@ http {\n\
     include /etc/nginx/conf.d/*.conf;\n\
 }\n" > /etc/nginx/nginx.conf
 
-# Create a clean Laravel Nginx configuration
+# Create Laravel Nginx config
 RUN printf "server {\n\
     listen 80 default_server;\n\
     listen [::]:80 default_server;\n\
@@ -80,7 +82,7 @@ RUN printf "server {\n\
     }\n\
 }\n" > /etc/nginx/conf.d/laravel.conf
 
-# Environment variables for the base image
+# Environment variables
 ENV SKIP_COMPOSER 1
 ENV WEBROOT /var/www/html/public
 ENV PHP_ERRORS_STDERR 1

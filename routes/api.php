@@ -14,6 +14,31 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+Route::get('/view-laravel-logs', function() {
+    $logFile = storage_path('logs/laravel.log');
+    if (!file_exists($logFile)) {
+        return response()->json(['error' => 'Log file not found'], 404);
+    }
+    
+    // Get last 100 lines
+    $logs = [];
+    $file = new \SplFileObject($logFile);
+    $file->seek(PHP_INT_MAX);
+    $totalLines = $file->key();
+    
+    $startLine = max(0, $totalLines - 100);
+    for ($i = $startLine; $i <= $totalLines; $i++) {
+        $file->seek($i);
+        $line = $file->current();
+        if (str_contains($line, 'OTP') || str_contains($line, 'otp')) {
+            $logs[] = $line;
+        }
+    }
+    
+    return response()->json(['otp_logs' => $logs]);
+});
+
 Route::get('/test', function() {
     return response()->json([
         'message' => 'API is working!',

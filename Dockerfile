@@ -61,12 +61,12 @@ http {\n\
     include /etc/nginx/conf.d/*.conf;\n\
 }\n" > /etc/nginx/nginx.conf
 
-# Create Laravel Nginx config
+# Create Laravel Nginx config - CHANGED root path below
 RUN printf "server {\n\
     listen 80 default_server;\n\
     listen [::]:80 default_server;\n\
     server_name _;\n\
-    root /var/www/public;\n\
+    root /var/www/html/public;\n\
     index index.php;\n\
 \n\
     location / {\n\
@@ -85,9 +85,9 @@ RUN printf "server {\n\
     }\n\
 }\n" > /etc/nginx/conf.d/laravel.conf
 
-# Environment variables
+# Environment variables - CHANGED WEBROOT below
 ENV SKIP_COMPOSER 1
-ENV WEBROOT /var/www/public
+ENV WEBROOT /var/www/html/public
 ENV PHP_ERRORS_STDERR 1
 ENV RUN_SCRIPTS 1
 ENV REAL_IP_HEADER 1

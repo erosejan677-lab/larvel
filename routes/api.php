@@ -51,6 +51,7 @@ Route::prefix('v1')->group(function () {
             ], 500);
         }
     });
+    
     require base_path('routes/api-group/auth/auth.php');
     require base_path('routes/api-group/auth/social-auth.php');
     require base_path('routes/api-group/user/preferences.php');

@@ -15,6 +15,33 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
+
+Route::post('/debug/register-try', function(Request $request) {
+    try {
+        // Try to create a user directly
+        $user = new \App\Models\User();
+        $user->username = $request->username;
+        $user->email = $request->email;
+        $user->phone = $request->phone;
+        $user->password = bcrypt($request->password);
+        $user->first_name = $request->first_name ?? null;
+        $user->last_name = $request->last_name ?? null;
+        $user->save();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'User created successfully',
+            'user' => $user
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
 Route::get('/last-error', function() {
     $logFile = storage_path('logs/laravel.log');
     

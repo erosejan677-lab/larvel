@@ -15,6 +15,36 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::get('/last-error', function() {
+    $logFile = storage_path('logs/laravel.log');
+    
+    if (!file_exists($logFile)) {
+        return response()->json(['error' => 'Log file not found'], 404);
+    }
+    
+    $content = file_get_contents($logFile);
+    $lines = explode("\n", $content);
+    $errorLines = [];
+    
+    // Find all error lines
+    foreach ($lines as $line) {
+        if (str_contains($line, 'ERROR') || 
+            str_contains($line, 'error') ||
+            str_contains($line, 'Exception') ||
+            str_contains($line, 'Fatal')) {
+            $errorLines[] = $line;
+        }
+    }
+    
+    // Get last 10 errors
+    $lastErrors = array_slice($errorLines, -10);
+    
+    return response()->json([
+        'total_errors_found' => count($errorLines),
+        'last_errors' => $lastErrors
+    ]);
+});
+
 Route::get('/view-laravel-logs', function() {
     $logFile = storage_path('logs/laravel.log');
     if (!file_exists($logFile)) {

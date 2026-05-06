@@ -22,8 +22,9 @@ RUN echo "APP_NAME=larvel" >> .env && \
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Run migrations
-RUN php artisan migrate --force
+# Run migrations# 
+Run migrations without failing if tables exist
+RUN php artisan migrate --force || true
 
 # Laravel optimizations
 RUN php artisan storage:link

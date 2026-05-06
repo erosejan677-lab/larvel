@@ -22,8 +22,7 @@ RUN echo "APP_NAME=larvel" >> .env && \
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Run migrations# 
-Run migrations without failing if tables exist
+# Run migrations (don't fail if tables already exist)
 RUN php artisan migrate --force || true
 
 # Laravel optimizations
@@ -67,7 +66,7 @@ RUN printf "server {\n\
     listen 80 default_server;\n\
     listen [::]:80 default_server;\n\
     server_name _;\n\
-    root /var/www/html/public;\n\
+    root /var/www/public;\n\
     index index.php;\n\
 \n\
     location / {\n\
@@ -88,7 +87,7 @@ RUN printf "server {\n\
 
 # Environment variables
 ENV SKIP_COMPOSER 1
-ENV WEBROOT /var/www/html/public
+ENV WEBROOT /var/www/public
 ENV PHP_ERRORS_STDERR 1
 ENV RUN_SCRIPTS 1
 ENV REAL_IP_HEADER 1

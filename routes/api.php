@@ -17,6 +17,61 @@ use Illuminate\Support\Facades\Route;
 
 
 
+
+Route::get('/logs-last-10min', function() {
+    $logFile = storage_path('logs/laravel.log');
+    
+    if (!file_exists($logFile)) {
+        return response()->json(['error' => 'Log file not found at: ' . $logFile], 404);
+    }
+    
+    // Get the timestamp for 10 minutes ago
+    $tenMinutesAgo = now()->subMinutes(10);
+    
+    // Read the entire log file
+    $content = file_get_contents($logFile);
+    $lines = explode("\n", $content);
+    
+    $recentLogs = [];
+    $currentLogEntry = '';
+    $logTimestamp = null;
+    
+    foreach ($lines as $line) {
+        // Check if line contains a timestamp pattern like [2026-05-11 10:30:00]
+        if (preg_match('/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/', $line, $matches)) {
+            // If we have a previous log entry, check if it's within 10 minutes
+            if ($currentLogEntry && $logTimestamp) {
+                if ($logTimestamp >= $tenMinutesAgo) {
+                    $recentLogs[] = $currentLogEntry;
+                }
+            }
+            // Start new log entry
+            $currentLogEntry = $line;
+            $logTimestamp = \Carbon\Carbon::parse($matches[1]);
+        } else {
+            // Append to current log entry
+            $currentLogEntry .= "\n" . $line;
+        }
+    }
+    
+    // Check the last log entry
+    if ($currentLogEntry && $logTimestamp && $logTimestamp >= $tenMinutesAgo) {
+        $recentLogs[] = $currentLogEntry;
+    }
+    
+    // Get only the last 50 lines from recent logs
+    $recentLogs = array_slice($recentLogs, -50);
+    
+    return response()->json([
+        'success' => true,
+        'time_range' => 'Last 10 minutes',
+        'from_time' => $tenMinutesAgo->toDateTimeString(),
+        'to_time' => now()->toDateTimeString(),
+        'total_lines_found' => count($recentLogs),
+        'logs' => $recentLogs
+    ]);
+});
+
 Route::post('/debug/register-try', function(Request $request) {
     try {
         // Try to create a user directly

@@ -10,8 +10,8 @@ RUN echo "APP_NAME=larvel" >> .env && \
     echo "APP_DEBUG=true" >> .env && \
     echo "APP_KEY=base64:FPdiQPdfo0IIk91I5PwmUiykiL4UgdVI1KSCYmFO8c0=" >> .env && \
     echo "DB_CONNECTION=pgsql" >> .env && \
-    echo "DB_HOST=aws-1-ap-south-1.pooler.supabase.com" >> .env && \
-    echo "DB_PORT=6543" >> .env && \
+    echo "DB_HOST=aws-1-ap-south-1.supabase.co" >> .env && \
+echo "DB_PORT=5432" >> .env && \
     echo "DB_DATABASE=postgres" >> .env && \
     echo "DB_USERNAME=postgres.ygwxwlbvgblvmxwuyaox" >> .env && \
     echo "DB_PASSWORD=umairkhan816" >> .env && \

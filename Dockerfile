@@ -10,14 +10,18 @@ RUN echo "APP_NAME=larvel" >> .env && \
     echo "APP_DEBUG=true" >> .env && \
     echo "APP_KEY=base64:FPdiQPdfo0IIk91I5PwmUiykiL4UgdVI1KSCYmFO8c0=" >> .env && \
     echo "DB_CONNECTION=pgsql" >> .env && \
-    echo "DB_HOST=aws-1-ap-south-1.supabase.co" >> .env && \
-echo "DB_PORT=5432" >> .env && \
+    echo "DB_HOST=aws-1-ap-south-1.pooler.supabase.com" >> .env && \
+    echo "DB_PORT=6543" >> .env && \
     echo "DB_DATABASE=postgres" >> .env && \
     echo "DB_USERNAME=postgres.ygwxwlbvgblvmxwuyaox" >> .env && \
     echo "DB_PASSWORD=umairkhan816" >> .env && \
     echo "IMAGEKIT_PUBLIC_KEY=public_tA4ShnDPwLDHBswKfE0WTdDxU0k=" >> .env && \
     echo "IMAGEKIT_PRIVATE_KEY=private_zFt9+YCaE4TSp8KU6qRhYDA8Sh4=" >> .env && \
     echo "IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/closyyyy" >> .env
+
+# Create database configuration file with PDO fix for prepared statements
+RUN echo "<?php return ['pgsql' => ['driver' => 'pgsql', 'host' => env('DB_HOST', '127.0.0.1'), 'port' => env('DB_PORT', '5432'), 'database' => env('DB_DATABASE', 'forge'), 'username' => env('DB_USERNAME', 'forge'), 'password' => env('DB_PASSWORD', ''), 'charset' => 'utf8', 'prefix' => '', 'prefix_indexes' => true, 'search_path' => 'public', 'sslmode' => 'require', 'options' => [PDO::ATTR_EMULATE_PREPARES => true]]];" > config/database_temp.php && \
+    cat config/database_temp.php > config/database.php
 
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader
@@ -29,6 +33,7 @@ RUN php artisan migrate --force || true
 RUN php artisan storage:link
 RUN php artisan config:clear
 RUN php artisan config:cache
+RUN php artisan route:clear
 RUN php artisan route:cache
 RUN php artisan view:cache
 
@@ -61,7 +66,7 @@ http {\n\
     include /etc/nginx/conf.d/*.conf;\n\
 }\n" > /etc/nginx/nginx.conf
 
-# Create Laravel Nginx config - CHANGED root path below
+# Create Laravel Nginx config
 RUN printf "server {\n\
     listen 80 default_server;\n\
     listen [::]:80 default_server;\n\
@@ -85,7 +90,7 @@ RUN printf "server {\n\
     }\n\
 }\n" > /etc/nginx/conf.d/laravel.conf
 
-# Environment variables - CHANGED WEBROOT below
+# Environment variables
 ENV SKIP_COMPOSER 1
 ENV WEBROOT /var/www/html/public
 ENV PHP_ERRORS_STDERR 1

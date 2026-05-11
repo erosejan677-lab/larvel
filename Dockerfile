@@ -19,10 +19,6 @@ RUN echo "APP_NAME=larvel" >> .env && \
     echo "IMAGEKIT_PRIVATE_KEY=private_zFt9+YCaE4TSp8KU6qRhYDA8Sh4=" >> .env && \
     echo "IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/closyyyy" >> .env
 
-# Create database configuration file with PDO fix for prepared statements
-RUN echo "<?php return ['pgsql' => ['driver' => 'pgsql', 'host' => env('DB_HOST', '127.0.0.1'), 'port' => env('DB_PORT', '5432'), 'database' => env('DB_DATABASE', 'forge'), 'username' => env('DB_USERNAME', 'forge'), 'password' => env('DB_PASSWORD', ''), 'charset' => 'utf8', 'prefix' => '', 'prefix_indexes' => true, 'search_path' => 'public', 'sslmode' => 'require', 'options' => [PDO::ATTR_EMULATE_PREPARES => true]]];" > config/database_temp.php && \
-    cat config/database_temp.php > config/database.php
-
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader
 

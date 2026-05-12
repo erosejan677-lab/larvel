@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 // Protected product endpoints:
 Route::prefix('auth/products')
-    ->middleware(['auth:sanctum', 'role:user,sanctum'])  // was role:user,web
+    ->middleware(['auth:sanctum'])  // remove role:user,sanctum completely
     ->group(function () {
     // Create a new product
     Route::post('create', [ProductController::class, 'store']);

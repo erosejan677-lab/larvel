@@ -16,6 +16,46 @@ use Illuminate\Support\Facades\Route;
 */
 
 
+
+Route::post('/v1/listing/auth/products/create-debug-full', function(Request $request) {
+    try {
+        \Log::info('=== FULL DEBUG START ===');
+        \Log::info('Method: ' . $request->method());
+        \Log::info('Has auth: ' . ($request->bearerToken() ? 'YES' : 'NO'));
+        \Log::info('User ID: ' . (auth()->user()?->id ?? 'null'));
+        \Log::info('All request data: ', $request->all());
+        \Log::info('Has files: ' . ($request->hasFile('images') ? 'YES' : 'NO'));
+        
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $idx => $file) {
+                \Log::info("Image $idx: " . $file->getClientOriginalName() . ", Size: " . $file->getSize());
+            }
+        }
+        
+        // Try to call the actual controller
+        $controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
+        $result = $controller->store($request);
+        
+        \Log::info('=== CONTROLLER RETURNED SUCCESS ===');
+        return $result;
+        
+    } catch (\Throwable $e) {
+        \Log::error('=== FULL DEBUG ERROR ===');
+        \Log::error('Message: ' . $e->getMessage());
+        \Log::error('File: ' . $e->getFile());
+        \Log::error('Line: ' . $e->getLine());
+        \Log::error('Trace: ' . $e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+})->middleware('auth:sanctum');
+
 // Debug all requests to /api/v1/listing/auth/products/create
 Route::match(['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], '/v1/listing/auth/products/create', function(Request $request) {
     try {

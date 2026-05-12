@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\V1\Listing\ProductController;
 use Illuminate\Support\Facades\Route;
 
 // Protected product endpoints:
-Route::prefix('auth/products')->middleware(['auth:sanctum', 'role:user'])->group(function () {
+Route::prefix('auth/products')->middleware(['auth:sanctum', 'role:user,web'])->group(function () {
     // Create a new product
     Route::post('create', [ProductController::class, 'store']);
 

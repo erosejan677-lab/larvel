@@ -15,6 +15,66 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::post('/test-product-service', function(Request $request) {
+    try {
+        $user = auth()->user();
+        \Log::info('=== TESTING PRODUCT SERVICE ===');
+        \Log::info('User ID: ' . ($user?->id ?? 'null'));
+        
+        // Get all request data
+        $data = $request->all();
+        $images = $request->file('images', []);
+        
+        \Log::info('Data: ', $data);
+        \Log::info('Images count: ' . count($images));
+        
+        // Create product manually
+        $brand = \App\Models\Brand::firstOrCreate(['name' => $data['brand_name']]);
+        
+        $product = \App\Models\Product::create([
+            'user_id' => $user->id,
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'price' => $data['price'],
+            'category_id' => $data['category_id'],
+            'brand_id' => $brand->id,
+            'condition_id' => $data['condition_id'],
+            'address_id' => $data['address_id'],
+            'size' => $data['size'] ?? null,
+            'color' => $data['color'] ?? null,
+            'location' => $data['location'] ?? null,
+            'quantity_left' => 1,
+            'quantity' => 1,
+            'approval_status' => 'pending',
+            'active' => true,
+            'sold' => false,
+            'allow_offers' => true
+        ]);
+        
+        // Save images
+        foreach ($images as $image) {
+            $path = $image->store('products', 'public');
+            $product->photos()->create([
+                'image_path' => asset('storage/' . $path)
+            ]);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'product' => $product,
+            'message' => 'Product created successfully'
+        ]);
+        
+    } catch (\Throwable $e) {
+        \Log::error('Service test error: ' . $e->getMessage());
+        return response()->json([
+            'error' => $e->getMessage(),
+            'line' => $e->getLine()
+        ], 500);
+    }
+})->middleware('auth:sanctum');
+
+
 Route::post('/create-product-direct', function(Request $request) {
     try {
         \Log::info('=== DIRECT PRODUCT CREATE ===');

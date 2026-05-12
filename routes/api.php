@@ -15,6 +15,37 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::post('/create-product-direct', function(Request $request) {
+    try {
+        \Log::info('=== DIRECT PRODUCT CREATE ===');
+        \Log::info('User ID: ' . (auth()->user()?->id ?? 'null'));
+        \Log::info('Has images: ' . ($request->hasFile('images') ? 'YES' : 'NO'));
+        \Log::info('Data: ', $request->all());
+        
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $idx => $file) {
+                \Log::info("Image $idx: " . $file->getClientOriginalName());
+            }
+        }
+        
+        // Call the actual controller
+        $controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
+        return $controller->store($request);
+        
+    } catch (\Throwable $e) {
+        \Log::error('Direct create error: ' . $e->getMessage());
+        \Log::error('File: ' . $e->getFile());
+        \Log::error('Line: ' . $e->getLine());
+        
+        return response()->json([
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ], 500);
+    }
+})->middleware('auth:sanctum');
+
+
 Route::post('/test-create-123', function(Request $request) {
     \Log::info('=== SIMPLE TEST ROUTE HIT ===');
     \Log::info('User: ' . (auth()->user()?->id ?? 'null'));

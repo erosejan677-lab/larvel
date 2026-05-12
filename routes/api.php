@@ -13,8 +13,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/test-product-controller', function(Request $request) {
     try {
-        // Create the correct request type
+        // Create the CreateProductRequest instance
         $createRequest = \App\Http\Requests\Api\V1\Listing\CreateProductRequest::createFrom($request);
+        
+        // Merge the request data with files
+        $createRequest->merge($request->all());
+        $createRequest->files->replace($request->files->all());
+        
+        // Set the user resolver
+        $createRequest->setUserResolver(fn() => auth()->user());
         
         $controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
         return $controller->store($createRequest);

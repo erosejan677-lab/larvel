@@ -15,6 +15,17 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::post('/test-create-123', function(Request $request) {
+    \Log::info('=== SIMPLE TEST ROUTE HIT ===');
+    \Log::info('User: ' . (auth()->user()?->id ?? 'null'));
+    \Log::info('Data: ', $request->all());
+    
+    return response()->json([
+        'message' => 'Simple test route works!',
+        'user_id' => auth()->user()?->id,
+        'received' => $request->all()
+    ]);
+})->middleware('auth:sanctum');
 
 
 Route::post('/v1/listing/auth/products/create-debug-full', function(Request $request) {

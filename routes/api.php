@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+Route::post('/create-product-simple', [App\Http\Controllers\Api\V1\Listing\ProductController::class, 'store'])
+    ->middleware('auth:sanctum');
+
 // ========== DEBUG ROUTES (Keep for testing) ==========
 
 Route::post('/debug-received-data', function(Request $request) {

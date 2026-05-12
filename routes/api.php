@@ -54,6 +54,7 @@ Route::post('/test-product-service', function(Request $request) {
             'size' => $data['size'] ?? null,
             'color' => $data['color'] ?? null,
             'location' => $data['location'] ?? null,
+    'shipping_type' => $data['shipping_type'] ?? 'depopShipping',  // ← ADD THIS LINE
             'quantity_left' => 1,
             'quantity' => 1,
             'approval_status' => 'pending',

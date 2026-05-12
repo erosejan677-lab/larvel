@@ -16,6 +16,29 @@ use Illuminate\Support\Facades\Route;
 */
 
 
+// Debug all requests to /api/v1/listing/auth/products/create
+Route::match(['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], '/v1/listing/auth/products/create', function(Request $request) {
+    try {
+        \Log::info('=== ROUTE HIT ===', [
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+            'headers' => $request->headers->all(),
+            'user_id' => auth()->user()?->id,
+            'has_token' => $request->bearerToken() ? true : false,
+        ]);
+        
+        return response()->json([
+            'message' => 'Route is working!',
+            'method' => $request->method(),
+            'user_id' => auth()->user()?->id,
+            'headers_received' => true
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Route debug error: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
+
 Route::post('/debug-create-listing', function(Request $request) {
     try {
         $user = auth()->user();

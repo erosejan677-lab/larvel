@@ -37,13 +37,36 @@ class ProductController extends Controller
      */
 
 
-    public function store(CreateProductRequest $request): JsonResponse
+
+private function decodeBase64Image($base64String)
+{
+    // Remove data:image/jpeg;base64, prefix if present
+    if (strpos($base64String, 'base64,') !== false) {
+        $base64String = explode('base64,', $base64String)[1];
+    }
+    
+    $imageData = base64_decode($base64String);
+    $fileName = time() . '_' . uniqid() . '.jpg';
+    
+    // Ensure directory exists
+    $directory = storage_path('app/public/products');
+    if (!file_exists($directory)) {
+        mkdir($directory, 0755, true);
+    }
+    
+    $path = $directory . '/' . $fileName;
+    file_put_contents($path, $imageData);
+    
+    return asset('storage/products/' . $fileName);
+}
+    
+   public function store(CreateProductRequest $request): JsonResponse
 {
     \Log::info('=== STORE METHOD START ===');
     \Log::info('User ID: ' . (auth()->user()?->id ?? 'null'));
     \Log::info('Request method: ' . $request->method());
     \Log::info('Has files: ' . ($request->hasFile('images') ? 'YES' : 'NO'));
-    \Log::info('Files count: ' . count($request->file('images', [])));
+    \Log::info('Has images input: ' . ($request->has('images') ? 'YES' : 'NO'));
     
     try {
         $validated = $request->validated();
@@ -71,8 +94,24 @@ class ProductController extends Controller
         unset($validated['brand_name']);
         \Log::info('Brand resolved', ['brand_id' => $brand->id]);
         
-        // Prepare images if present
-        $images = $request->file('images') ?? [];
+        // Handle images - supports both multipart (files) and base64 (JSON from Render)
+        $images = [];
+        
+        // Check if images are sent as base64 (JSON request from Flutter on Render)
+        if ($request->has('images') && is_array($request->input('images'))) {
+            \Log::info('Processing base64 images', ['count' => count($request->input('images'))]);
+            foreach ($request->input('images') as $base64Image) {
+                $images[] = $this->decodeBase64Image($base64Image);
+            }
+        } 
+        // Check if images are sent as files (multipart request from local)
+        elseif ($request->hasFile('images')) {
+            \Log::info('Processing file uploads', ['count' => count($request->file('images'))]);
+            $images = $request->file('images');
+        } else {
+            \Log::warning('No images found in request');
+        }
+        
         \Log::info('Images to process', ['count' => count($images)]);
         
         // Create product

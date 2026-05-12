@@ -19,12 +19,22 @@ Route::post('/create-product-direct', function(Request $request) {
     try {
         \Log::info('=== DIRECT PRODUCT CREATE ===');
         \Log::info('User ID: ' . (auth()->user()?->id ?? 'null'));
-        \Log::info('Has images: ' . ($request->hasFile('images') ? 'YES' : 'NO'));
         
-        // Create the proper request object
-        $createRequest = \App\Http\Requests\Api\V1\Listing\CreateProductRequest::createFrom($request);
+        // Manually create and validate the request
+        $createRequest = new \App\Http\Requests\Api\V1\Listing\CreateProductRequest(
+            $request->all(),
+            $request->query(),
+            $request->attributes,
+            $request->cookies,
+            $request->files,
+            $request->server,
+            $request->getContent()
+        );
         
-        // Call the actual controller
+        // Set the user on the request
+        $createRequest->setUserResolver(fn() => auth()->user());
+        
+        // Call the controller
         $controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
         return $controller->store($createRequest);
         

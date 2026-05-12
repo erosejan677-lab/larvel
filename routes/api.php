@@ -20,17 +20,13 @@ Route::post('/create-product-direct', function(Request $request) {
         \Log::info('=== DIRECT PRODUCT CREATE ===');
         \Log::info('User ID: ' . (auth()->user()?->id ?? 'null'));
         \Log::info('Has images: ' . ($request->hasFile('images') ? 'YES' : 'NO'));
-        \Log::info('Data: ', $request->all());
         
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $idx => $file) {
-                \Log::info("Image $idx: " . $file->getClientOriginalName());
-            }
-        }
+        // Create the proper request object
+        $createRequest = \App\Http\Requests\Api\V1\Listing\CreateProductRequest::createFrom($request);
         
         // Call the actual controller
         $controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
-        return $controller->store($request);
+        return $controller->store($createRequest);
         
     } catch (\Throwable $e) {
         \Log::error('Direct create error: ' . $e->getMessage());

@@ -15,6 +15,16 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
+Route::post('/debug-received-data', function(Request $request) {
+    return response()->json([
+        'all_data' => $request->all(),
+        'has_city' => $request->has('city'),
+        'city_value' => $request->input('city'),
+        'files' => $request->hasFile('images') ? count($request->file('images')) : 0
+    ]);
+})->middleware('auth:sanctum');
+
 Route::post('/test-product-service', function(Request $request) {
     try {
         $user = auth()->user();
@@ -40,6 +50,7 @@ Route::post('/test-product-service', function(Request $request) {
             'brand_id' => $brand->id,
             'condition_id' => $data['condition_id'],
             'address_id' => $data['address_id'],
+           'city' => $data['city'] ?? null,  // ← ADD THIS LINE
             'size' => $data['size'] ?? null,
             'color' => $data['color'] ?? null,
             'location' => $data['location'] ?? null,

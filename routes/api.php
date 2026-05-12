@@ -13,14 +13,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/test-product-controller', function(Request $request) {
     try {
+        // Create the correct request type
+        $createRequest = \App\Http\Requests\Api\V1\Listing\CreateProductRequest::createFrom($request);
+        
         $controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
-        return $controller->store($request);
+        return $controller->store($createRequest);
     } catch (\Throwable $e) {
         return response()->json(['error' => $e->getMessage(), 'line' => $e->getLine()], 500);
     }
 })->middleware('auth:sanctum');
-Route::post('/create-product-simple', [App\Http\Controllers\Api\V1\Listing\ProductController::class, 'store'])
-    ->middleware('auth:sanctum');
 
 // ========== DEBUG ROUTES (Keep for testing) ==========
 

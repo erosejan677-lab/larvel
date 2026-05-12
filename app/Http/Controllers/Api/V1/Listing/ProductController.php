@@ -35,48 +35,78 @@ class ProductController extends Controller
      * @param CreateProductRequest $request
      * @return JsonResponse
      */
-    public function store(CreateProductRequest $request): JsonResponse
-    {
-        $validated = $request->validated();
-        $user = auth()->user();
 
+
+    public function store(CreateProductRequest $request): JsonResponse
+{
+    \Log::info('=== STORE METHOD START ===');
+    \Log::info('User ID: ' . (auth()->user()?->id ?? 'null'));
+    \Log::info('Request method: ' . $request->method());
+    \Log::info('Has files: ' . ($request->hasFile('images') ? 'YES' : 'NO'));
+    \Log::info('Files count: ' . count($request->file('images', [])));
+    
+    try {
+        $validated = $request->validated();
+        \Log::info('Validation passed', ['validated_data' => array_keys($validated)]);
+        
+        $user = auth()->user();
+        \Log::info('User found', ['user_id' => $user->id]);
+        
         // Validate address ownership
-        if (!$user->addresses()->where('id', $validated['address_id'] ?? null)->exists()) {
+        $addressId = $validated['address_id'] ?? null;
+        \Log::info('Checking address', ['address_id' => $addressId]);
+        
+        if (!$user->addresses()->where('id', $addressId)->exists()) {
+            \Log::error('Address validation failed', ['address_id' => $addressId]);
             return $this->errorResponse(__('responses.product.failed.invalid_address'));
         }
-
+        \Log::info('Address validation passed');
+        
         // Resolve or create brand
-        $brand = Brand::firstOrCreate(['name' => $validated['brand_name']]);
+        $brandName = $validated['brand_name'];
+        \Log::info('Processing brand', ['brand_name' => $brandName]);
+        
+        $brand = Brand::firstOrCreate(['name' => $brandName]);
         $validated['brand_id'] = $brand->id;
         unset($validated['brand_name']);
-
+        \Log::info('Brand resolved', ['brand_id' => $brand->id]);
+        
         // Prepare images if present
         $images = $request->file('images') ?? [];
-
-        try {
-            // Create product
-            $product = $this->productService->createProduct($validated, $images);
-
-            // Create associated size if provided
-            if (!empty($validated['size_data'])) {
-                $product->size()->create($validated['size_data']);
-            }
-
-            // Eager load the size relation
-            $product->load('size');
-
-            // Log product activity
-            ActivityLogHelper::logProductPosted($product);
-
-
-            return $this->successResponse($product, __('responses.product.success.create'));
-
-        } catch (\Throwable $e) {
-            return $this->errorResponse(
-                __('responses.product.failed.create', ['message' => $e->getMessage()])
-            );
+        \Log::info('Images to process', ['count' => count($images)]);
+        
+        // Create product
+        \Log::info('Calling product service->createProduct');
+        $product = $this->productService->createProduct($validated, $images);
+        \Log::info('Product created', ['product_id' => $product->id]);
+        
+        // Create associated size if provided
+        if (!empty($validated['size_data'])) {
+            \Log::info('Creating size', ['size_data' => $validated['size_data']]);
+            $product->size()->create($validated['size_data']);
         }
+        
+        // Eager load the size relation
+        $product->load('size');
+        
+        // Log product activity
+        ActivityLogHelper::logProductPosted($product);
+        
+        return $this->successResponse($product, __('responses.product.success.create'));
+        
+    } catch (\Throwable $e) {
+        \Log::error('PRODUCT CREATION FAILED', [
+            'message' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return $this->errorResponse(
+            __('responses.product.failed.create', ['message' => $e->getMessage()])
+        );
     }
+}
 
 
     public function userProducts()

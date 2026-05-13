@@ -10,6 +10,17 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+Route::get('/php-error', function() {
+    $logFile = '/var/log/nginx/error.log';
+    if (file_exists($logFile)) {
+        $content = file_get_contents($logFile);
+        $lines = explode("\n", $content);
+        $lastLines = array_slice($lines, -50);
+        return response()->json(['nginx_errors' => $lastLines]);
+    }
+    return response()->json(['error' => 'No log file']);
+});
+
 Route::post('/debug-listing-creation', function(Request $request) {
     try {
         // Log everything

@@ -10,6 +10,57 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+Route::post('/debug-listing-creation', function(Request $request) {
+    try {
+        // Log everything
+        \Log::info('=== DEBUG LISTING CREATION START ===');
+        \Log::info('User ID: ' . (auth()->user()?->id ?? 'null'));
+        \Log::info('Has images array: ' . ($request->has('images') ? 'YES' : 'NO'));
+        \Log::info('Images type: ' . gettype($request->input('images')));
+        \Log::info('Images count: ' . (is_array($request->input('images')) ? count($request->input('images')) : 'not array'));
+        
+        // Log first image length if exists
+        if ($request->has('images') && is_array($request->input('images')) && count($request->input('images')) > 0) {
+            \Log::info('First image length: ' . strlen($request->input('images')[0]));
+        }
+        
+        // Try to decode a test image
+        if ($request->has('images') && is_array($request->input('images')) && count($request->input('images')) > 0) {
+            $testImage = $request->input('images')[0];
+            
+            // Remove base64 header if present
+            if (strpos($testImage, 'base64,') !== false) {
+                $testImage = explode('base64,', $testImage)[1];
+            }
+            
+            $decoded = base64_decode($testImage);
+            \Log::info('Test decoded image size: ' . strlen($decoded));
+            
+            if (strlen($decoded) < 100) {
+                \Log::warning('Decoded image is very small: ' . strlen($decoded) . ' bytes');
+            }
+        }
+        
+        // Call the actual controller
+        $controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
+        return $controller->store($request);
+        
+    } catch (\Exception $e) {
+        \Log::error('DEBUG CATCH ERROR: ' . $e->getMessage());
+        \Log::error('File: ' . $e->getFile());
+        \Log::error('Line: ' . $e->getLine());
+        \Log::error('Trace: ' . $e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ], 500);
+    }
+})->middleware('auth:sanctum');
+
+
 Route::get('/force-clear', function() {
     Artisan::call('config:clear');
     Artisan::call('cache:clear');

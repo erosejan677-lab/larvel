@@ -40,7 +40,7 @@ class CreateProductRequest extends FormRequest
             'shipping_type' => 'required|string|max:50',
             // Validate images array. Each file must be an image of the allowed types.
             'images'      => 'required|array|min:2|max:8',
-            'images.*'    => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp,avif|max:7168',
+             'images.*'    => 'required|string',  // Accept base64 strings
             'allow_offers' => 'sometimes|boolean',
             'sold' => 'sometimes|boolean',
             'active' => 'sometimes|boolean',

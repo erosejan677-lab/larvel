@@ -23,50 +23,28 @@ Route::get('/php-error', function() {
 
 Route::post('/debug-listing-creation', function(Request $request) {
     try {
-        // Log everything
-        \Log::info('=== DEBUG LISTING CREATION START ===');
-        \Log::info('User ID: ' . (auth()->user()?->id ?? 'null'));
-        \Log::info('Has images array: ' . ($request->has('images') ? 'YES' : 'NO'));
-        \Log::info('Images type: ' . gettype($request->input('images')));
-        \Log::info('Images count: ' . (is_array($request->input('images')) ? count($request->input('images')) : 'not array'));
+        // METHOD 1: Manually create and populate the request
+        $createRequest = new \App\Http\Requests\Api\V1\Listing\CreateProductRequest();
+        $createRequest->merge($request->all());
         
-        // Log first image length if exists
-        if ($request->has('images') && is_array($request->input('images')) && count($request->input('images')) > 0) {
-            \Log::info('First image length: ' . strlen($request->input('images')[0]));
-        }
+        // Manually set the user
+        $createRequest->setUserResolver(function () use ($request) {
+            return $request->user();
+        });
         
-        // Try to decode a test image
-        if ($request->has('images') && is_array($request->input('images')) && count($request->input('images')) > 0) {
-            $testImage = $request->input('images')[0];
-            
-            // Remove base64 header if present
-            if (strpos($testImage, 'base64,') !== false) {
-                $testImage = explode('base64,', $testImage)[1];
-            }
-            
-            $decoded = base64_decode($testImage);
-            \Log::info('Test decoded image size: ' . strlen($decoded));
-            
-            if (strlen($decoded) < 100) {
-                \Log::warning('Decoded image is very small: ' . strlen($decoded) . ' bytes');
-            }
-        }
-        $createRequest = \App\Http\Requests\Api\V1\Listing\CreateProductRequest::createFrom($request);
-
-$controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
-return $controller->store($createRequest);
+        // Call controller
+        $controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
+        return $controller->store($createRequest);
         
-    } catch (\Exception $e) {
-        \Log::error('DEBUG CATCH ERROR: ' . $e->getMessage());
-        \Log::error('File: ' . $e->getFile());
-        \Log::error('Line: ' . $e->getLine());
+    } catch (\Throwable $e) {
+        \Log::error('DEBUG ERROR: ' . $e->getMessage());
         \Log::error('Trace: ' . $e->getTraceAsString());
         
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine()
+            'line' => $e->getLine(),
+            'file' => $e->getFile()
         ], 500);
     }
 })->middleware('auth:sanctum');

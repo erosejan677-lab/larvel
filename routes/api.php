@@ -51,10 +51,10 @@ Route::post('/debug-listing-creation', function(Request $request) {
                 \Log::warning('Decoded image is very small: ' . strlen($decoded) . ' bytes');
             }
         }
-        
-        // Call the actual controller
-        $controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
-        return $controller->store($request);
+        $createRequest = \App\Http\Requests\Api\V1\Listing\CreateProductRequest::createFrom($request);
+
+$controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
+return $controller->store($createRequest);
         
     } catch (\Exception $e) {
         \Log::error('DEBUG CATCH ERROR: ' . $e->getMessage());

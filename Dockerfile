@@ -65,15 +65,16 @@ http {\n\
     include /etc/nginx/mime.types;\n\
     default_type application/octet-stream;\n\
     access_log /var/log/nginx/access.log;\n\
+    client_max_body_size 20M;\n\
+    client_body_temp_path /var/lib/nginx/tmp/client_body 1 2;\n\
     include /etc/nginx/conf.d/*.conf;\n\
 }\n" > /etc/nginx/nginx.conf
 
-# Create Laravel Nginx config with increased upload size
+# Create Laravel Nginx config
 RUN printf "server {\n\
     listen 80 default_server;\n\
     listen [::]:80 default_server;\n\
     server_name _;\n\
-    client_max_body_size 20M;\n\
     root /var/www/html/public;\n\
     index index.php;\n\
 \n\
@@ -93,11 +94,10 @@ RUN printf "server {\n\
     }\n\
 }\n" > /etc/nginx/conf.d/laravel.conf
 
-# ===== FIX: Use /tmp for nginx client body (bypasses permission issues) =====
-RUN echo "client_body_temp_path /tmp/nginx_client_body 1 2;" >> /etc/nginx/nginx.conf && \
-    mkdir -p /tmp/nginx_client_body && \
-    chown -R www-data:www-data /tmp/nginx_client_body
-# ===== END OF FIX =====
+# ===== FIX: Create temp directory with correct permissions =====
+RUN mkdir -p /var/lib/nginx/tmp/client_body && \
+    chown -R www-data:www-data /var/lib/nginx/tmp && \
+    chmod -R 755 /var/lib/nginx/tmp
 
 # Environment variables
 ENV SKIP_COMPOSER 1

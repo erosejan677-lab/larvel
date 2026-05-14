@@ -93,6 +93,11 @@ RUN printf "server {\n\
     }\n\
 }\n" > /etc/nginx/conf.d/laravel.conf
 
+# ===== FIX: nginx temp directory permissions =====
+RUN mkdir -p /var/lib/nginx/tmp/client_body && \
+    chown -R www-data:www-data /var/lib/nginx/tmp && \
+    chmod -R 755 /var/lib/nginx/tmp
+
 # Environment variables
 ENV SKIP_COMPOSER 1
 ENV WEBROOT /var/www/html/public

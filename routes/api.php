@@ -29,61 +29,66 @@ Route::post('/debug-listing-creation', function(Request $request) {
         // Check if user is authenticated
         $user = $request->user();
         if (!$user) {
-            \Log::error('No authenticated user found');
             return response()->json(['error' => 'User not authenticated'], 401);
         }
-        \Log::info('User ID: ' . $user->id);
         
-        // METHOD 1: Manually create and populate the request
-        $createRequest = new \App\Http\Requests\Api\V1\Listing\CreateProductRequest();
-        $createRequest->merge($request->all());
+        // Create product DIRECTLY without using FormRequest
+        $data = $request->all();
         
-        // Manually set the user
-        $createRequest->setUserResolver(function () use ($request) {
-            return $request->user();
-        });
-        
-        // Validate the request manually first
-        $validator = validator($request->all(), [
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'brand_name' => 'required|string',
-            'condition_id' => 'required|exists:conditions,id',
-            'address_id' => 'required|exists:addresses,id',
-        ]);
-        
-        if ($validator->fails()) {
-            \Log::error('Validation failed: ', $validator->errors()->toArray());
-            return response()->json([
-                'error' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
+        // Validate required fields
+        $required = ['title', 'description', 'price', 'category_id', 'brand_name', 'condition_id', 'address_id'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                return response()->json([
+                    'error' => "Missing required field: $field",
+                    'provided' => array_keys($data)
+                ], 422);
+            }
         }
         
-        \Log::info('Validation passed, calling controller...');
+        // Get or create brand
+        $brand = \App\Models\Brand::firstOrCreate(['name' => $data['brand_name']]);
         
-        // Call controller
-        $controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
-        $result = $controller->store($createRequest);
+        // Create product
+        $product = \App\Models\Product::create([
+            'user_id' => $user->id,
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'price' => $data['price'],
+            'category_id' => $data['category_id'],
+            'brand_id' => $brand->id,
+            'condition_id' => $data['condition_id'],
+            'address_id' => $data['address_id'],
+            'city' => $data['city'] ?? null,
+            'size' => $data['size'] ?? null,
+            'color' => $data['color'] ?? null,
+            'location' => $data['location'] ?? null,
+            'shipping_type' => $data['shipping_type'] ?? 'depopShipping',
+            'quantity_left' => $data['quantity'] ?? 1,
+            'quantity' => $data['quantity'] ?? 1,
+            'approval_status' => 'pending',
+            'active' => true,
+            'sold' => false,
+            'allow_offers' => true
+        ]);
         
-        \Log::info('Controller returned successfully');
+        \Log::info('Product created successfully with ID: ' . $product->id);
         
-        return $result;
+        return response()->json([
+            'success' => true,
+            'message' => 'Product created successfully!',
+            'product' => $product
+        ], 201);
         
     } catch (\Throwable $e) {
         \Log::error('DEBUG ERROR: ' . $e->getMessage());
-        \Log::error('File: ' . $e->getFile());
         \Log::error('Line: ' . $e->getLine());
-        \Log::error('Trace: ' . $e->getTraceAsString());
         
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
             'line' => $e->getLine(),
-            'file' => basename($e->getFile()),
-            'type' => get_class($e)
+            'file' => basename($e->getFile())
         ], 500);
     }
 })->middleware('auth:sanctum');

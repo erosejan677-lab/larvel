@@ -93,10 +93,11 @@ RUN printf "server {\n\
     }\n\
 }\n" > /etc/nginx/conf.d/laravel.conf
 
-# ===== FIX: nginx temp directory permissions =====
-RUN mkdir -p /var/lib/nginx/tmp/client_body && \
-    chown -R www-data:www-data /var/lib/nginx/tmp && \
-    chmod -R 755 /var/lib/nginx/tmp
+# ===== FIX: Use /tmp for nginx client body (bypasses permission issues) =====
+RUN echo "client_body_temp_path /tmp/nginx_client_body 1 2;" >> /etc/nginx/nginx.conf && \
+    mkdir -p /tmp/nginx_client_body && \
+    chown -R www-data:www-data /tmp/nginx_client_body
+# ===== END OF FIX =====
 
 # Environment variables
 ENV SKIP_COMPOSER 1

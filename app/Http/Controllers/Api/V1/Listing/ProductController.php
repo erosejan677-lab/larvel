@@ -60,89 +60,76 @@ private function decodeBase64Image($base64String)
     return asset('storage/products/' . $fileName);
 }
     
-   public function store(CreateProductRequest $request): JsonResponse
+ public function store(CreateProductRequest $request): JsonResponse
 {
-    \Log::info('=== STORE METHOD START ===');
-    \Log::info('User ID: ' . (auth()->user()?->id ?? 'null'));
-    \Log::info('Request method: ' . $request->method());
-    \Log::info('Has files: ' . ($request->hasFile('images') ? 'YES' : 'NO'));
-    \Log::info('Has images input: ' . ($request->has('images') ? 'YES' : 'NO'));
+    $validated = $request->validated();
+    $user = auth()->user();
+
+    // Validate address ownership
+    if (!$user->addresses()->where('id', $validated['address_id'] ?? null)->exists()) {
+        return $this->errorResponse(__('responses.product.failed.invalid_address'));
+    }
+
+    // Resolve or create brand
+    $brand = Brand::firstOrCreate(['name' => $validated['brand_name']]);
+    $validated['brand_id'] = $brand->id;
+    unset($validated['brand_name']);
+
+    // ✅ FIX: Handle BOTH multipart files AND base64 JSON
+    $imagePaths = [];
     
-    try {
-        
-        $validated = $request ? ($request->validated() ?? $request->all()) : request()->all();
-       
-        \Log::info('Validation passed', ['validated_data' => array_keys($validated)]);
-        
-        $user = auth()->user();
-        \Log::info('User found', ['user_id' => $user->id]);
-        
-        // Validate address ownership
-        $addressId = $validated['address_id'] ?? null;
-        \Log::info('Checking address', ['address_id' => $addressId]);
-        
-        if (!$user->addresses()->where('id', $addressId)->exists()) {
-            \Log::error('Address validation failed', ['address_id' => $addressId]);
-            return $this->errorResponse(__('responses.product.failed.invalid_address'));
-        }
-        \Log::info('Address validation passed');
-        
-        // Resolve or create brand
-        $brandName = $validated['brand_name'];
-        \Log::info('Processing brand', ['brand_name' => $brandName]);
-        
-        $brand = Brand::firstOrCreate(['name' => $brandName]);
-        $validated['brand_id'] = $brand->id;
-        unset($validated['brand_name']);
-        \Log::info('Brand resolved', ['brand_id' => $brand->id]);
-        
-        // Handle images - supports both multipart (files) and base64 (JSON from Render)
-        $images = [];
-        
-        // Check if images are sent as base64 (JSON request from Flutter on Render)
-        if ($request->has('images') && is_array($request->input('images'))) {
-            \Log::info('Processing base64 images', ['count' => count($request->input('images'))]);
-            foreach ($request->input('images') as $base64Image) {
-                $images[] = $this->decodeBase64Image($base64Image);
+    // Check for base64 images (from Flutter JSON request)
+    if ($request->has('images') && is_array($request->input('images'))) {
+        foreach ($request->input('images') as $base64Image) {
+            // Remove data:image/jpeg;base64, prefix if present
+            if (strpos($base64Image, 'base64,') !== false) {
+                $base64Image = explode('base64,', $base64Image)[1];
             }
-        } 
-        // Check if images are sent as files (multipart request from local)
-        elseif ($request->hasFile('images')) {
-            \Log::info('Processing file uploads', ['count' => count($request->file('images'))]);
-            $images = $request->file('images');
-        } else {
-            \Log::warning('No images found in request');
+            
+            $imageData = base64_decode($base64Image);
+            $fileName = time() . '_' . uniqid() . '.jpg';
+            $directory = storage_path('app/public/products');
+            
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+            
+            file_put_contents($directory . '/' . $fileName, $imageData);
+            $imagePaths[] = 'products/' . $fileName;
         }
-        
-        \Log::info('Images to process', ['count' => count($images)]);
-        
+    } 
+    // Check for multipart files (from local Flutter)
+    elseif ($request->hasFile('images')) {
+        foreach ($request->file('images') as $image) {
+            $imagePaths[] = $image->store('products', 'public');
+        }
+    }
+
+    try {
         // Create product
-        \Log::info('Calling product service->createProduct');
-        $product = $this->productService->createProduct($validated, $images);
-        \Log::info('Product created', ['product_id' => $product->id]);
-        
+        $product = $this->productService->createProduct($validated, []);
+
+        // ✅ Save images to photos table
+        foreach ($imagePaths as $path) {
+            $product->photos()->create([
+                'image_path' => asset('storage/' . $path)
+            ]);
+        }
+
         // Create associated size if provided
         if (!empty($validated['size_data'])) {
-            \Log::info('Creating size', ['size_data' => $validated['size_data']]);
             $product->size()->create($validated['size_data']);
         }
-        
-        // Eager load the size relation
-        $product->load('size');
-        
+
+        // Eager load the size and photos relations
+        $product->load('size', 'photos');
+
         // Log product activity
         ActivityLogHelper::logProductPosted($product);
-        
+
         return $this->successResponse($product, __('responses.product.success.create'));
-        
+
     } catch (\Throwable $e) {
-        \Log::error('PRODUCT CREATION FAILED', [
-            'message' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        
         return $this->errorResponse(
             __('responses.product.failed.create', ['message' => $e->getMessage()])
         );

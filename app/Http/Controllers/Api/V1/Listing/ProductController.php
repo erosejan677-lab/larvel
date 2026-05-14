@@ -69,7 +69,9 @@ private function decodeBase64Image($base64String)
     \Log::info('Has images input: ' . ($request->has('images') ? 'YES' : 'NO'));
     
     try {
-        $validated = $request->validated();
+        
+        $validated = $request ? ($request->validated() ?? $request->all()) : request()->all();
+       
         \Log::info('Validation passed', ['validated_data' => array_keys($validated)]);
         
         $user = auth()->user();

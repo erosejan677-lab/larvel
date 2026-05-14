@@ -23,6 +23,17 @@ Route::get('/php-error', function() {
 
 Route::post('/debug-listing-creation', function(Request $request) {
     try {
+        \Log::info('=== DEBUG LISTING CREATION START ===');
+        \Log::info('Request data: ', $request->all());
+        
+        // Check if user is authenticated
+        $user = $request->user();
+        if (!$user) {
+            \Log::error('No authenticated user found');
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+        \Log::info('User ID: ' . $user->id);
+        
         // METHOD 1: Manually create and populate the request
         $createRequest = new \App\Http\Requests\Api\V1\Listing\CreateProductRequest();
         $createRequest->merge($request->all());
@@ -32,19 +43,47 @@ Route::post('/debug-listing-creation', function(Request $request) {
             return $request->user();
         });
         
+        // Validate the request manually first
+        $validator = validator($request->all(), [
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'category_id' => 'required|exists:categories,id',
+            'brand_name' => 'required|string',
+            'condition_id' => 'required|exists:conditions,id',
+            'address_id' => 'required|exists:addresses,id',
+        ]);
+        
+        if ($validator->fails()) {
+            \Log::error('Validation failed: ', $validator->errors()->toArray());
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        \Log::info('Validation passed, calling controller...');
+        
         // Call controller
         $controller = app(\App\Http\Controllers\Api\V1\Listing\ProductController::class);
-        return $controller->store($createRequest);
+        $result = $controller->store($createRequest);
+        
+        \Log::info('Controller returned successfully');
+        
+        return $result;
         
     } catch (\Throwable $e) {
         \Log::error('DEBUG ERROR: ' . $e->getMessage());
+        \Log::error('File: ' . $e->getFile());
+        \Log::error('Line: ' . $e->getLine());
         \Log::error('Trace: ' . $e->getTraceAsString());
         
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
             'line' => $e->getLine(),
-            'file' => $e->getFile()
+            'file' => basename($e->getFile()),
+            'type' => get_class($e)
         ], 500);
     }
 })->middleware('auth:sanctum');

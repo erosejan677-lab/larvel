@@ -50,7 +50,7 @@ RUN echo "upload_max_filesize = 20M" >> /usr/local/etc/php/conf.d/uploads.ini &&
 RUN rm -rf /etc/nginx/sites-enabled/* /etc/nginx/conf.d/* /etc/nginx/nginx.conf
 RUN mkdir -p /etc/nginx/conf.d
 
-# Create minimal nginx.conf
+# Create nginx.conf with memory buffering (no disk writes!)
 RUN printf "user www-data;\n\
 worker_processes auto;\n\
 pid /run/nginx.pid;\n\
@@ -66,7 +66,7 @@ http {\n\
     default_type application/octet-stream;\n\
     access_log /var/log/nginx/access.log;\n\
     client_max_body_size 20M;\n\
-    client_body_temp_path /var/lib/nginx/tmp/client_body 1 2;\n\
+    client_body_buffer_size 20M;\n\
     include /etc/nginx/conf.d/*.conf;\n\
 }\n" > /etc/nginx/nginx.conf
 
@@ -93,11 +93,6 @@ RUN printf "server {\n\
         deny all;\n\
     }\n\
 }\n" > /etc/nginx/conf.d/laravel.conf
-
-# ===== FIX: Create temp directory with correct permissions =====
-RUN mkdir -p /var/lib/nginx/tmp/client_body && \
-    chown -R www-data:www-data /var/lib/nginx/tmp && \
-    chmod -R 755 /var/lib/nginx/tmp
 
 # Environment variables
 ENV SKIP_COMPOSER 1

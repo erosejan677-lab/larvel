@@ -9,18 +9,12 @@ class GuestCart extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['quantity', 'product_id', 'guest_id'];
+    protected $fillable = ['guest_id', 'items'];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-
-    public function product()
-    {
-        return $this->belongsTo(Product::class);
-    }
+    protected $casts = [
+        'items' => 'array',  // ADD THIS - auto handle JSON
+        'guest_id' => 'string',  // ADD THIS
+    ];
 
     public function items()
     {

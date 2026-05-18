@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Product extends Model
 {
     use HasFactory, SoftDeletes;
+    
     protected static function booted()
     {
         static::addGlobalScope('ignoreTrashed', function (Builder $builder) {
@@ -43,7 +44,16 @@ class Product extends Model
     protected $casts = [
         'allow_offers' => 'boolean',
         'sold' => 'boolean',
-        'active' => 'boolean'
+        'active' => 'boolean',
+        // ADD THESE NEW CASTS:
+        'user_id' => 'integer',
+        'category_id' => 'integer',
+        'brand_id' => 'integer',
+        'condition_id' => 'integer',
+        'address_id' => 'integer',
+        'price' => 'integer',
+        'quantity' => 'integer',
+        'quantity_left' => 'integer',
     ];
 
     protected $hidden = ['created_at', 'updated_at', 'deleted_at'];
@@ -95,6 +105,4 @@ class Product extends Model
     public function size() {
         return $this->hasOne(Size::class);
     }
-
-
 }

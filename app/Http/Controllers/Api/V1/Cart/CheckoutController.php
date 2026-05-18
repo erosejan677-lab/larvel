@@ -114,7 +114,7 @@ class CheckoutController extends Controller
      */
     public function getOrder($orderId, Request $request)
     {
-dd(1);
+
         $order = Order::where('buyer_id', $request->user()->id)
             ->with('items.product', 'seller')
             ->findOrFail($orderId);

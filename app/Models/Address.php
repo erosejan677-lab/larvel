@@ -22,6 +22,11 @@ class Address extends Model
         'is_guest_address'
     ];
 
+    protected $casts = [
+        'user_id' => 'integer',  // ADD THIS - ensures integer type
+        'is_guest_address' => 'boolean',  // ADD THIS
+    ];
+
     protected $hidden = ['created_at', 'updated_at'];
 
     public function user() {
@@ -37,4 +42,3 @@ class Address extends Model
         return $this->hasMany(Order::class, 'delivery_address_id');
     }
 }
-

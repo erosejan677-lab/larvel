@@ -23,7 +23,7 @@ RUN echo "APP_NAME=larvel" >> .env && \
 RUN composer install --no-dev --optimize-autoloader
 
 # Run migrations (don't fail if tables already exist)
-RUN php artisan migrate --force || true
+# RUN php artisan migrate --force || true   # COMMENTED OUT - Tables already exist
 
 # Laravel optimizations
 RUN php artisan storage:link

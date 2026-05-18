@@ -23,7 +23,24 @@ class CheckoutRequestGuest extends FormRequest
     {
         // Ensure there's a guest cart for validation of cart_items
         $guestId = $this->input('guest_id');
+        
+        // FIX: Handle case when guest_id is null
+        if (!$guestId) {
+            return [
+                'guest_id' => ['required', 'uuid'],
+                'guest_info.guest_id' => ['required', 'uuid'],
+            ];
+        }
+        
         $cart = GuestCart::firstOrCreate(['guest_id' => $guestId]);
+        
+        // FIX: Check if cart was created/retrieved successfully
+        if (!$cart) {
+            return [
+                'guest_id' => ['required', 'uuid', 'exists:guest_carts,guest_id'],
+            ];
+        }
+        
         $cartId = $cart->id;
 
         return [
@@ -74,6 +91,15 @@ class CheckoutRequestGuest extends FormRequest
 
             foreach ($cartItems as $i => $item) {
                 $product = Product::find($item['product_id']);
+                
+                // FIX: Check if product exists before accessing properties
+                if (!$product) {
+                    $validator->errors()->add(
+                        "cart_items.{$i}.product_id",
+                        "Product not found."
+                    );
+                    continue;
+                }
 
                 // 1) Product must belong to seller
                 if ($product->user_id !== (int) $sellerId) {

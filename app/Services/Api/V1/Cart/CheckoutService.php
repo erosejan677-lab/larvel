@@ -243,7 +243,7 @@ class CheckoutService
             return $order->load('items');
         });
     }
-
+   
     public function processCheckoutGuest(
         string $guestId,
         int    $sellerId,
@@ -251,6 +251,7 @@ class CheckoutService
         array  $guestInfo
     ): Order
     {
+            DB::reconnect();
         return DB::transaction(function () use (
             $guestId,
             $sellerId,

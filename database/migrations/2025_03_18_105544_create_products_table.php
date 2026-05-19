@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('user_id'); // Changed from foreignId to string for UUID support
             $table->foreignId('category_id')->constrained();
             $table->foreignId('brand_id')->constrained();
             $table->foreignId('condition_id')->constrained();
@@ -22,13 +22,17 @@ return new class extends Migration
             $table->integer('quantity')->default(1);
             $table->integer('quantity_left')->default(1);
             $table->string('approval_status')->default('pending');
-            $table->string('description');
+            $table->string('managed_by_closyyyy')->default('0');
+            $table->text('description')->nullable(); // Changed to text
             $table->string('location');
             $table->string('city');
             $table->string('shipping_type');
-            $table->boolean('active')->default(true);
-            $table->boolean('sold')->default(false);
-            $table->boolean('allow_offers')->default(true);
+            
+            // ✅ FIX: Use smallInteger instead of boolean for PostgreSQL compatibility
+            $table->smallInteger('active')->default(1);
+            $table->smallInteger('sold')->default(0);
+            $table->smallInteger('allow_offers')->default(1);
+            
             $table->unsignedBigInteger('price');
             $table->softDeletes();
             $table->timestamps();

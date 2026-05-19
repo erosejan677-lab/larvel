@@ -60,7 +60,7 @@ private function decodeBase64Image($base64String)
     return asset('storage/products/' . $fileName);
 }
     
- public function store(CreateProductRequest $request): JsonResponse
+public function store(CreateProductRequest $request): JsonResponse
 {
     $validated = $request->validated();
     $user = auth()->user();
@@ -71,23 +71,26 @@ private function decodeBase64Image($base64String)
     // ✅ ADD USER_ID TO VALIDATED DATA
     $validated['user_id'] = $userId;
     
-   // Validate address ownership - cast user_id to string in query
-if (!$user->addresses()->where('id', $validated['address_id'] ?? null)->whereRaw('CAST(user_id AS VARCHAR) = ?', [(string) $user->id])->exists()) {
-    return $this->errorResponse(__('responses.product.failed.invalid_address'));
-}
+    // ✅ Validate address ownership - DIRECT DATABASE QUERY (no Eloquent)
+    $addressExists = \DB::table('addresses')
+        ->where('id', $validated['address_id'] ?? null)
+        ->where('user_id', $userId)
+        ->exists();
+
+    if (!$addressExists) {
+        return $this->errorResponse(__('responses.product.failed.invalid_address'));
+    }
 
     // Resolve or create brand
     $brand = Brand::firstOrCreate(['name' => $validated['brand_name']]);
     $validated['brand_id'] = $brand->id;
     unset($validated['brand_name']);
 
-    // ✅ FIX: Handle BOTH multipart files AND base64 JSON
+    // Handle images
     $imagePaths = [];
     
-    // Check for base64 images (from Flutter JSON request)
     if ($request->has('images') && is_array($request->input('images'))) {
         foreach ($request->input('images') as $base64Image) {
-            // Remove data:image/jpeg;base64, prefix if present
             if (strpos($base64Image, 'base64,') !== false) {
                 $base64Image = explode('base64,', $base64Image)[1];
             }
@@ -103,9 +106,7 @@ if (!$user->addresses()->where('id', $validated['address_id'] ?? null)->whereRaw
             file_put_contents($directory . '/' . $fileName, $imageData);
             $imagePaths[] = 'products/' . $fileName;
         }
-    } 
-    // Check for multipart files (from local Flutter)
-    elseif ($request->hasFile('images')) {
+    } elseif ($request->hasFile('images')) {
         foreach ($request->file('images') as $image) {
             $imagePaths[] = $image->store('products', 'public');
         }
@@ -115,7 +116,7 @@ if (!$user->addresses()->where('id', $validated['address_id'] ?? null)->whereRaw
         // Create product
         $product = $this->productService->createProduct($validated, []);
 
-        // ✅ Save images to photos table
+        // Save images to photos table
         foreach ($imagePaths as $path) {
             $product->photos()->create([
                 'image_path' => asset('storage/' . $path)
@@ -127,7 +128,7 @@ if (!$user->addresses()->where('id', $validated['address_id'] ?? null)->whereRaw
             $product->size()->create($validated['size_data']);
         }
 
-        // Eager load the size and photos relations
+        // Eager load relations
         $product->load('size', 'photos');
 
         // Log product activity

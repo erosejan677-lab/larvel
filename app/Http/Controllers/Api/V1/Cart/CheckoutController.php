@@ -51,7 +51,7 @@ class CheckoutController extends Controller
     {
         $v       = $request->validated();
         $guestId = $v['guest_id'];
-        $seller  = $v['seller_id'];
+    $seller  = (string) $v['seller_id'];  // ← CAST TO STRING HERE
         $items   = $v['cart_items'];
         $info    = $v['guest_info'];
 

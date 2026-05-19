@@ -264,7 +264,7 @@ class CheckoutService
                 'address_line_2' => $guestInfo['address_line_2'] ?? null,
                 'city' => $guestInfo['city'],
                 'state_province_or_region' => $guestInfo['state_province_or_region'] ?? null,
-                'zip_or_postal_code' => 00000,
+                'zip_or_postal_code' => '00000',  // String - works everywhere
                 'address_type' => 'shipping',
                 'is_guest_address' => 1,
             ]);

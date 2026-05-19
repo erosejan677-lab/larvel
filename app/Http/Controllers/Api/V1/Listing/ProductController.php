@@ -65,6 +65,12 @@ private function decodeBase64Image($base64String)
     $validated = $request->validated();
     $user = auth()->user();
 
+    // ✅ CAST USER ID TO STRING
+    $userId = (string) $user->id;
+    
+    // ✅ ADD USER_ID TO VALIDATED DATA
+    $validated['user_id'] = $userId;
+    
     // Validate address ownership
     if (!$user->addresses()->where('id', $validated['address_id'] ?? null)->exists()) {
         return $this->errorResponse(__('responses.product.failed.invalid_address'));

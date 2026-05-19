@@ -25,10 +25,13 @@ class CheckoutController extends Controller
     {
         $validated = $request->validated();
 
+    // Cast seller_id to string
+    $sellerId = (string) $validated['seller_id'];
+
         try {
             $order = $this->checkoutService->processCheckout(
                 $request->user(),
-                $validated['seller_id'],
+            $sellerId,  // ← Changed from $validated['seller_id'] to $sellerId
                 $validated['cart_items'],
                 $validated['delivery_address_id']
             );
@@ -87,8 +90,9 @@ class CheckoutController extends Controller
     {
         logger('guest: ', $request->all());
 
-        $type = $request->query('type', 'sold'); // default is 'sold'
-        $userId = $request->user()->id;
+       
+    $type = $request->query('type', 'sold'); // default is 'sold'
+    $userId = (string) $request->user()->id;  // ← CAST TO STRING HERE
 
         if ($type === 'purchased') {
             $orders = Order::where('buyer_id', $userId)
@@ -115,7 +119,8 @@ class CheckoutController extends Controller
     public function getOrder($orderId, Request $request)
     {
 
-        $order = Order::where('buyer_id', $request->user()->id)
+    $userId = (string) $request->user()->id;  // ← CAST TO STRING HERE
+    $order = Order::where('buyer_id', $userId)  // ← Use $userId here, not $request->user()->id
             ->with('items.product', 'seller')
             ->findOrFail($orderId);
 

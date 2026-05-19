@@ -71,10 +71,10 @@ private function decodeBase64Image($base64String)
     // ✅ ADD USER_ID TO VALIDATED DATA
     $validated['user_id'] = $userId;
     
-    // Validate address ownership
-    if (!$user->addresses()->where('id', $validated['address_id'] ?? null)->exists()) {
-        return $this->errorResponse(__('responses.product.failed.invalid_address'));
-    }
+   // Validate address ownership - cast user_id to string in query
+if (!$user->addresses()->where('id', $validated['address_id'] ?? null)->whereRaw('CAST(user_id AS VARCHAR) = ?', [(string) $user->id])->exists()) {
+    return $this->errorResponse(__('responses.product.failed.invalid_address'));
+}
 
     // Resolve or create brand
     $brand = Brand::firstOrCreate(['name' => $validated['brand_name']]);

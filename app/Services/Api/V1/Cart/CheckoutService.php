@@ -246,7 +246,7 @@ class CheckoutService
    
     public function processCheckoutGuest(
         string $guestId,
-        int    $sellerId,
+        string $sellerId,  // ← Changed from int to string
         array  $cartItems,
         array  $guestInfo
     ): Order

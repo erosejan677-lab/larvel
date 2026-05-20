@@ -56,7 +56,7 @@ class User extends Authenticatable implements  Wallet, Confirmable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'id' => 'string',  // CHANGE THIS - from 'integer' to 'string'
+    'id' => 'integer',  // Keep as integer
     ];
 
     // Add this method to override the default notification

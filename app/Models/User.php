@@ -57,13 +57,17 @@ class User extends Authenticatable implements Wallet, Confirmable
     // Auto-assign role after user is created
     protected static function booted()
     {
-        static::created(function ($user) {
-            if ($user->id) {
-                if (\Spatie\Permission\Models\Role::where('name', 'user')->exists()) {
-                    $user->assignRole('user');
-                }
+ static::created(function ($user) {
+    if ($user->id) {
+        try {
+            if (\Spatie\Permission\Models\Role::where('name', 'user')->exists()) {
+                $user->assignRole('user');
             }
-        });
+        } catch (\Exception $e) {
+            \Log::error('Role assignment failed for user ' . $user->id . ': ' . $e->getMessage());
+        }
+    }
+});
     }
 
     public function sendEmailVerificationNotification()

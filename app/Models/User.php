@@ -29,7 +29,6 @@ class User extends Authenticatable implements Wallet, Confirmable
         'username',
         'profile_picture',
         'google_id',
-        'phone'
     ];
 
     protected $hidden = [
@@ -44,40 +43,22 @@ class User extends Authenticatable implements Wallet, Confirmable
         'password' => 'hashed',
     ];
 
-    // Handle ID conversion for both MySQL and PostgreSQL
-    public function getIdAttribute($value)
-    {
-        return is_numeric($value) ? (int) $value : $value;
-    }
-
-    public function setIdAttribute($value)
-    {
-        $this->attributes['id'] = is_numeric($value) ? (int) $value : (string) $value;
-    }
-
-    public function getKey()
-    {
-        $value = parent::getKey();
-        return is_numeric($value) ? (int) $value : $value;
-    }
-
+    // Use auto-incrementing integer ID (matches both MySQL and PostgreSQL)
     public function getKeyType()
     {
-        return 'string';
+        return 'int';
     }
 
     public function getIncrementing()
     {
-        return false;
+        return true;
     }
 
-    // ADD THIS METHOD HERE
+    // Auto-assign role after user is created
     protected static function booted()
     {
         static::created(function ($user) {
-            // Only assign role if user has an ID
             if ($user->id) {
-                // Check if role exists before assigning
                 if (\Spatie\Permission\Models\Role::where('name', 'user')->exists()) {
                     $user->assignRole('user');
                 }
@@ -90,5 +71,83 @@ class User extends Authenticatable implements Wallet, Confirmable
         $this->notify(new VerifyEmail);
     }
 
-    // ... rest of your methods remain the same
+    public function preferences()
+    {
+        return $this->hasOne(UserPreference::class);
+    }
+
+    public function addresses()
+    {
+        return $this->hasMany(Address::class);
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'followers', 'user_id', 'follower_id')->withTimestamps();
+    }
+
+    public function following()
+    {
+        return $this->belongsToMany(User::class, 'followers', 'follower_id', 'user_id')->withTimestamps();
+    }
+
+    public function likedProducts()
+    {
+        return $this->belongsToMany(Product::class, 'product_likes', 'user_id', 'product_id')->withTimestamps();
+    }
+
+    public function savedProducts()
+    {
+        return $this->belongsToMany(Product::class, 'product_saves', 'user_id', 'product_id')->withTimestamps();
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class, 'user_id');
+    }
+
+    public function givenRatings()
+    {
+        return $this->hasMany(Rating::class, 'rater_id');
+    }
+
+    public function averageRating()
+    {
+        return $this->ratings()->avg('rating');
+    }
+
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_user')->withTimestamps();
+    }
+
+    public function sentMessages()
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    public function sentOffers()
+    {
+        return $this->hasMany(Offer::class, 'offerer_id');
+    }
+
+    public function bankDetail()
+    {
+        return $this->hasOne(BankDetail::class);
+    }
+
+    public function shop()
+    {
+        return $this->hasOne(Shop::class);
+    }
+
+    public function bankTransactions()
+    {
+        return $this->hasMany(BankTransaction::class);
+    }
 }

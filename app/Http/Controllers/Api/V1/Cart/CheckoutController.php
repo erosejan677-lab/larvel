@@ -50,37 +50,53 @@ class CheckoutController extends Controller
             ], 422);
         }
     }
-    public function checkoutGuest(CheckoutRequestGuest $request)
-    {
-        $v       = $request->validated();
-        $guestId = $v['guest_id'];
-    $seller  = (string) $v['seller_id'];  // ← CAST TO STRING HERE
-        $items   = $v['cart_items'];
-        $info    = $v['guest_info'];
-
-        logger('checkoutGuest payload', [
-            'validated'  => $v,
-            'guest_id'   => $guestId,
-            'seller_id'  => $seller,
-            'cart_items' => $items,
-            'guest_info' => $info,
-        ]);
-        try {
-            $order = $this->checkoutService
-                ->processCheckoutGuest($guestId, $seller, $items, $info);
-
-            return response()->json([
-                'status'  => 'success',
-                'message' => 'Checkout completed successfully',
-                'data'    => $order,
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => $e->getMessage(),
-            ], 422);
-        }
+ public function checkoutGuest(CheckoutRequestGuest $request)
+{
+    $v = $request->validated();
+    $guestId = $v['guest_id'];
+    $items = $v['cart_items'];
+    $info = $v['guest_info'];
+    
+    // Get the correct seller_id from the product (ignore what Flutter sent)
+    $productId = $items[0]['product_id'];
+    $product = \App\Models\Product::find($productId);
+    
+    if (!$product) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Product not found'
+        ], 422);
     }
+    
+    // Use the product's user_id as seller_id
+    $sellerId = (string) $product->user_id;
+    
+    logger('checkoutGuest payload', [
+        'flutter_sent_seller_id' => $v['seller_id'] ?? 'not set',
+        'using_seller_id' => $sellerId,
+        'product_id' => $productId,
+        'product_user_id' => $product->user_id,
+        'guest_id' => $guestId,
+        'cart_items' => $items,
+        'guest_info' => $info,
+    ]);
+    
+    try {
+        $order = $this->checkoutService
+            ->processCheckoutGuest($guestId, $sellerId, $items, $info);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Checkout completed successfully',
+            'data' => $order,
+        ], 201);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+        ], 422);
+    }
+}
 
     /**
      * Retrieve orders for the authenticated user.

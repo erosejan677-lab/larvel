@@ -23,19 +23,22 @@ use Illuminate\Support\Str;
 class CheckoutService
 {
     protected $postexService;
+    protected $blueExService; // ✅ was missing the property declaration
 
     public function __construct(PostexService $postexService, BlueExService $blueExService)
     {
         $this->postexService = $postexService;
         $this->blueExService = $blueExService;
     }
-public function processCheckout(User $buyer, string $sellerId, array $cartItems, int $deliveryAddressId): Order
+
+    // ✅ Changed: string $sellerId → int $sellerId
+    public function processCheckout(User $buyer, int $sellerId, array $cartItems, int $deliveryAddressId): Order
     {
         return DB::transaction(function () use ($buyer, $sellerId, $cartItems, $deliveryAddressId) {
-            // 1) Lock all products in one go
+
             $productIds = collect($cartItems)->pluck('product_id')->all();
             $products = Product::whereIn('id', $productIds)
-                ->where('user_id', $sellerId)
+                ->where('user_id', $sellerId) // ✅ now int = bigint, no type mismatch
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
@@ -44,20 +47,15 @@ public function processCheckout(User $buyer, string $sellerId, array $cartItems,
                 throw new \Exception("One or more products were not found for this seller.");
             }
 
-            $now = now();
+            $now      = now();
             $subtotal = 0;
             $itemsData = [];
+            $offerId  = null; // ✅ initialize here to avoid undefined variable in Order::create
 
-            // 2) Build order-items payload and compute subtotal
             foreach ($cartItems as $item) {
                 $product = $products[$item['product_id']];
-                $offerId = isset($item['offer_id']) ? (int)$item['offer_id'] : null;
+                $offerId = isset($item['offer_id']) ? (int) $item['offer_id'] : null;
 
-                \Log::info('Processing cart item', [
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'offer_id' => $offerId,
-                ]);
                 if ($item['quantity'] > $product->quantity_left) {
                     throw new \Exception("Insufficient stock for product ID {$product->id}.");
                 }
@@ -74,54 +72,47 @@ public function processCheckout(User $buyer, string $sellerId, array $cartItems,
                     }
                 }
 
-                $price = $offer ? $offer->price : $product->price;
+                $price     = $offer ? $offer->price : $product->price;
                 $lineTotal = $price * $item['quantity'];
                 $subtotal += $lineTotal;
 
                 $itemsData[] = [
                     'product_id' => $product->id,
-                    'quantity' => $item['quantity'],
-                    'price' => $price,
-                    'total' => $lineTotal,
+                    'quantity'   => $item['quantity'],
+                    'price'      => $price,
+                    'total'      => $lineTotal,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
             }
 
-            // 3) Grab both fees in one query
-            $fees = Fees::whereIn('fee_type', ['delivery', 'platform', 'market_threshold'])
+            $fees            = Fees::whereIn('fee_type', ['delivery', 'platform', 'market_threshold'])
                 ->pluck('fee_amount', 'fee_type');
-
-            $deliveryFee = $fees['delivery'] ?? 0;
+            $deliveryFee     = $fees['delivery'] ?? 0;
             $platformFeeRate = $fees['platform'] ?? 0;
 
-            // 4) Totals logic
-            $buyerTotal = $subtotal + $deliveryFee;
+            $buyerTotal        = $subtotal + $deliveryFee;
             $platformFeeAmount = round($subtotal * $platformFeeRate, 2);
-            $sellerPayout = round($subtotal - $platformFeeAmount, 2);
+            $sellerPayout      = round($subtotal - $platformFeeAmount, 2);
 
-            // 5) Create the Order
             $order = Order::create([
-                'buyer_id' => $buyer->id,
-                'seller_id' => $sellerId,
-                'subtotal' => $subtotal,
-                'delivery_fee' => $deliveryFee,
-                'platform_fee' => $platformFeeAmount,
-                'total_amount' => $buyerTotal,
-                'expected_delivery_date' => Carbon::now()->addDays(5),
-                'tracking_no' => 'CLSY-' . strtoupper(Str::random(10)),
-                'actual_delivery_date' => null,
-                'status' => 'pending',
-                'delivery_address_id' => $deliveryAddressId,
-                'total_seller_payout' => $sellerPayout,
-                'market_threshold_applied' => 0,
-                'offer_id' => $offerId ?? null
+                'buyer_id'                  => $buyer->id,  // ✅ int from User model
+                'seller_id'                 => $sellerId,   // ✅ int
+                'subtotal'                  => $subtotal,
+                'delivery_fee'              => $deliveryFee,
+                'platform_fee'              => $platformFeeAmount,
+                'total_amount'              => $buyerTotal,
+                'expected_delivery_date'    => Carbon::now()->addDays(5),
+                'tracking_no'               => 'CLSY-' . strtoupper(Str::random(10)),
+                'actual_delivery_date'      => null,
+                'status'                    => 'pending',
+                'delivery_address_id'       => $deliveryAddressId,
+                'total_seller_payout'       => $sellerPayout,
+                'market_threshold_applied'  => 0,
+                'offer_id'                  => $offerId ?? null,
             ]);
 
-            // 6) Insert order items via relationship
             $order->items()->createMany($itemsData);
-
-            // 7) Log activity
             ActivityLogHelper::logOrderPlaced($order);
 
             try {
@@ -131,150 +122,60 @@ public function processCheckout(User $buyer, string $sellerId, array $cartItems,
                 Log::error('Failed to send order summary email: ' . $e->getMessage());
             }
 
-            // 8) Update stock & sold flag on the same locked models
             foreach ($cartItems as $item) {
-                $p = $products[$item['product_id']];
+                $p      = $products[$item['product_id']];
                 $newLeft = $p->quantity_left - $item['quantity'];
-
-                $p->update([
-                    'quantity_left' => $newLeft,
-                    'sold' => $newLeft === 0,
-                ]);
+                $p->update(['quantity_left' => $newLeft, 'sold' => $newLeft === 0]);
             }
 
-            $postexResponse = $this->postexService->sendOrderToPostex($order, $itemsData, $products, $buyerTotal);
-            $blueEXResponse = $this->blueExService->sendOrderToBlueEx($order, $itemsData, $products, $buyerTotal);
+            $this->sendShippingAndSms($order, $itemsData, $products, $buyerTotal);
 
-            if (is_array($postexResponse)) {
-                \Log::info('Postex Response', $postexResponse);
-            } else {
-                \Log::info('Postex Response', ['response' => $postexResponse]);
-            }
-            if (is_array($blueEXResponse)) {
-                \Log::info('BlueEX Response', $blueEXResponse);
-            } else {
-                \Log::info('BlueEX Response', ['response' => $blueEXResponse]);
-            }
-
-            // Get tracking number safely
-            $trackingNumber = 'N/A';
-            if (is_array($blueEXResponse) && isset($blueEXResponse['cnno'])) {
-                $trackingNumber = $blueEXResponse['cnno'];
-            } elseif (is_array($postexResponse) && isset($postexResponse['dist']['trackingNumber'])) {
-                $trackingNumber = $postexResponse['dist']['trackingNumber'];
-            }
-
-            if ($trackingNumber == 'N/A') {
-                \Log::warning('Tracking number not found', ['postex' => $postexResponse, 'blueex' => $blueEXResponse]);
-            }
-
-            $messageData = [
-                'name' => $order['guest_name'] ?? $order->buyer->first_name ?? '',
-                'trackingID' => $trackingNumber,
-            ];
-
-            $payload = [
-                'api_key' => config('services.sendpk.api_key'),
-                'sender' => 'Closyyyy',
-                'mobile' => $order['guest_phone'] ?? $order->buyer->phone ?? '',
-                'template_id' => 10119,
-                'message' => json_encode($messageData),
-                'format' => 'json',
-            ];
-
-            try {
-                \Log::info('SendPK SMS payload:', $payload);
-                $response = Http::asForm()->post('https://sendpk.com/api/sms.php', $payload);
-                \Log::debug('SendPK API raw response:', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'json' => $response->json(),
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed order sms: ' . $e->getMessage());
-            }
-
-            //seller sms
-            $messageData = [
-                'name' => $order->seller->first_name ?? '',
-            ];
-
-            $payload = [
-                'api_key' => config('services.sendpk.api_key'),
-                'sender' => 'Closyyyy',
-                'mobile' => $order->seller->phone ?? '',
-                'template_id' => 10120,
-                'message' => json_encode($messageData),
-                'format' => 'json',
-            ];
-
-            try {
-                \Log::info('SendPK SMS payload:', $payload);
-                $response = Http::asForm()->post('https://sendpk.com/api/sms.php', $payload);
-                \Log::debug('SendPK API raw response:', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'json' => $response->json(),
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed order sms: ' . $e->getMessage());
-            }
-
-            // 9) Adjust buyer's cart in one go
-            $cart = Cart::firstOrCreate(['user_id' => $buyer->id]);
-            $cartItemsById = $cart
-                ->items()
+            $cart          = Cart::firstOrCreate(['user_id' => $buyer->id]);
+            $cartItemsById = $cart->items()
                 ->whereIn('product_id', $productIds)
                 ->get()
                 ->keyBy('product_id');
 
             foreach ($cartItems as $item) {
-                $ci = $cartItemsById[$item['product_id']];
+                $ci        = $cartItemsById[$item['product_id']];
                 $remaining = $ci->quantity - $item['quantity'];
-
-                if ($remaining > 0) {
-                    $ci->update(['quantity' => $remaining]);
-                } else {
-                    $ci->delete();
-                }
+                $remaining > 0 ? $ci->update(['quantity' => $remaining]) : $ci->delete();
             }
 
             return $order->load('items');
         });
     }
-   
+
+    // ✅ Changed: string $sellerId → int $sellerId
     public function processCheckoutGuest(
-        string $guestId,
-        string $sellerId,  // ← Changed from int to string
+        string $guestId,   // ✅ UUID — keep as string, stored separately
+        int    $sellerId,  // ✅ was string, now int to match bigint column
         array  $cartItems,
         array  $guestInfo
-    ): Order
-    {
-            DB::reconnect();
-        return DB::transaction(function () use (
-            $guestId,
-            $sellerId,
-            $cartItems,
-            $guestInfo
-        ) {
-            // Create the one-off Address for this guest
+    ): Order {
+        DB::reconnect();
+
+        return DB::transaction(function () use ($guestId, $sellerId, $cartItems, $guestInfo) {
+
+            // ✅ Guest address: user_id stored as TEXT for guests (UUID)
+            // addresses.user_id must support both int (real users) and UUID (guests)
+            // Make sure your addresses table has user_id as TEXT/VARCHAR — check below
             $address = Address::create([
-                'user_id' => $guestId,
-                'address_line_1' => $guestInfo['address'],
-                'address_line_2' => $guestInfo['address_line_2'] ?? null,
-                'city' => $guestInfo['city'],
+                'user_id'                  => $guestId, // UUID string for guests
+                'address_line_1'           => $guestInfo['address'],
+                'address_line_2'           => $guestInfo['address_line_2'] ?? null,
+                'city'                     => $guestInfo['city'],
                 'state_province_or_region' => $guestInfo['state_province_or_region'] ?? null,
-                'zip_or_postal_code' => '00000',  // String - works everywhere
-                'address_type' => 'shipping',
-                'is_guest_address' => 1,
+                'zip_or_postal_code'       => '00000',
+                'address_type'             => 'shipping',
+                'is_guest_address'         => 1,
             ]);
 
             $deliveryAddressId = $address->id;
 
-            // Lock & fetch the seller's products
             $productIds = collect($cartItems)->pluck('product_id')->all();
-            $products = Product::whereIn('id', $productIds)
-                ->where('user_id', $sellerId)
+            $products   = Product::whereIn('id', $productIds)
+                ->where('user_id', $sellerId) // ✅ int = bigint
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
@@ -283,9 +184,8 @@ public function processCheckout(User $buyer, string $sellerId, array $cartItems,
                 throw new \Exception("One or more products were not found for this seller.");
             }
 
-            // Build items payload & subtotal
-            $now = now();
-            $subtotal = 0;
+            $now       = now();
+            $subtotal  = 0;
             $itemsData = [];
 
             foreach ($cartItems as $item) {
@@ -299,49 +199,44 @@ public function processCheckout(User $buyer, string $sellerId, array $cartItems,
 
                 $itemsData[] = [
                     'product_id' => $p->id,
-                    'quantity' => $item['quantity'],
-                    'price' => $p->price,
-                    'total' => $lineTotal,
+                    'quantity'   => $item['quantity'],
+                    'price'      => $p->price,
+                    'total'      => $lineTotal,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
             }
 
-            // Fees lookup
-            $fees = Fees::whereIn('fee_type', ['delivery', 'platform', 'market_threshold'])
+            $fees            = Fees::whereIn('fee_type', ['delivery', 'platform', 'market_threshold'])
                 ->pluck('fee_amount', 'fee_type');
-            $deliveryFee = $fees['delivery'] ?? 0;
+            $deliveryFee     = $fees['delivery'] ?? 0;
             $platformFeeRate = $fees['platform'] ?? 0;
 
-            // Totals
-            $buyerTotal = $subtotal + $deliveryFee;
+            $buyerTotal        = $subtotal + $deliveryFee;
             $platformFeeAmount = round($subtotal * $platformFeeRate, 2);
-            $sellerPayout = round($subtotal - $platformFeeAmount, 2);
+            $sellerPayout      = round($subtotal - $platformFeeAmount, 2);
 
-            // Create the Order
             $order = Order::create([
-                'buyer_id' => $guestId,
-                'guest_name' => $guestInfo['first_name'] . ' ' . $guestInfo['last_name'],
-                'guest_phone' => $guestInfo['phone'],
-                'guest_email' => $guestInfo['email'],
-                'is_guest_order' => 1,
-                'seller_id' => $sellerId,
-                'subtotal' => $subtotal,
-                'delivery_fee' => $deliveryFee,
-                'platform_fee' => $platformFeeAmount,
-                'total_amount' => $buyerTotal,
-                'expected_delivery_date' => Carbon::now()->addDays(5),
-                'tracking_no' => 'CLSY-' . strtoupper(Str::random(10)),
-                'status' => 'pending',
-                'delivery_address_id' => $deliveryAddressId,
-                'total_seller_payout' => $sellerPayout,
+                'buyer_id'                 => $guestId,   // ✅ UUID string for guests
+                'guest_name'               => $guestInfo['first_name'] . ' ' . $guestInfo['last_name'],
+                'guest_phone'              => $guestInfo['phone'],
+                'guest_email'              => $guestInfo['email'],
+                'is_guest_order'           => 1,
+                'seller_id'                => $sellerId,  // ✅ int
+                'subtotal'                 => $subtotal,
+                'delivery_fee'             => $deliveryFee,
+                'platform_fee'             => $platformFeeAmount,
+                'total_amount'             => $buyerTotal,
+                'expected_delivery_date'   => Carbon::now()->addDays(5),
+                'tracking_no'              => 'CLSY-' . strtoupper(Str::random(10)),
+                'status'                   => 'pending',
+                'delivery_address_id'      => $deliveryAddressId,
+                'total_seller_payout'      => $sellerPayout,
                 'market_threshold_applied' => 0,
             ]);
 
-            // Insert order items
             $order->items()->createMany($itemsData);
 
-            // Activity log + emails
             try {
                 Mail::to($order->seller->email)->send(new OrderSummaryToSeller($order));
                 Mail::to(config('app.admin_email'))->send(new OrderSummaryToAdmin($order));
@@ -349,111 +244,69 @@ public function processCheckout(User $buyer, string $sellerId, array $cartItems,
                 Log::error('Failed order emails: ' . $e->getMessage());
             }
 
-            // Update stock
             foreach ($cartItems as $item) {
-                $p = $products[$item['product_id']];
+                $p       = $products[$item['product_id']];
                 $newLeft = $p->quantity_left - $item['quantity'];
-                $p->update([
-                    'quantity_left' => $newLeft,
-                    'sold' => $newLeft === 0,
-                ]);
+                $p->update(['quantity_left' => $newLeft, 'sold' => $newLeft === 0]);
             }
 
-            $postexResponse = $this->postexService->sendOrderToPostex($order, $itemsData, $products, $buyerTotal);
-            $blueEXResponse = $this->blueExService->sendOrderToBlueEx($order, $itemsData, $products, $buyerTotal);
+            $this->sendShippingAndSms($order, $itemsData, $products, $buyerTotal);
 
-            if (is_array($postexResponse)) {
-                \Log::info('Postex Response', $postexResponse);
-            } else {
-                \Log::info('Postex Response', ['response' => $postexResponse]);
-            }
-            if (is_array($blueEXResponse)) {
-                \Log::info('BlueEX Response', $blueEXResponse);
-            } else {
-                \Log::info('BlueEX Response', ['response' => $blueEXResponse]);
-            }
-
-            // Get tracking number safely
-            $trackingNumber = 'N/A';
-            if (is_array($blueEXResponse) && isset($blueEXResponse['cnno'])) {
-                $trackingNumber = $blueEXResponse['cnno'];
-            } elseif (is_array($postexResponse) && isset($postexResponse['dist']['trackingNumber'])) {
-                $trackingNumber = $postexResponse['dist']['trackingNumber'];
-            }
-
-            if ($trackingNumber == 'N/A') {
-                \Log::warning('Tracking number not found', ['postex' => $postexResponse, 'blueex' => $blueEXResponse]);
-            }
-
-            // Buyer SMS
-            $messageData = [
-                'name' => $order->guest_name ?? '',
-                'trackingID' => $trackingNumber,
-            ];
-
-            $payload = [
-                'api_key' => config('services.sendpk.api_key'),
-                'sender' => 'Closyyyy',
-                'mobile' => $order->guest_phone ?? '',
-                'template_id' => 10119,
-                'message' => json_encode($messageData),
-                'format' => 'json',
-            ];
-
-            try {
-                \Log::info('SendPK SMS payload:', $payload);
-                $response = Http::asForm()->post('https://sendpk.com/api/sms.php', $payload);
-                \Log::debug('SendPK API raw response:', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'json' => $response->json(),
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed order sms: ' . $e->getMessage());
-            }
-
-            // Seller SMS
-            $messageData = [
-                'name' => $order->seller->first_name ?? '',
-            ];
-
-            $payload = [
-                'api_key' => config('services.sendpk.api_key'),
-                'sender' => 'Closyyyy',
-                'mobile' => $order->seller->phone ?? '',
-                'template_id' => 10120,
-                'message' => json_encode($messageData),
-                'format' => 'json',
-            ];
-
-            try {
-                \Log::info('SendPK SMS payload:', $payload);
-                $response = Http::asForm()->post('https://sendpk.com/api/sms.php', $payload);
-                \Log::debug('SendPK API raw response:', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'json' => $response->json(),
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed order sms: ' . $e->getMessage());
-            }
-
-            // Adjust guest cart
-            $cart = GuestCart::firstOrCreate(['guest_id' => $guestId]);
+            $cart      = GuestCart::firstOrCreate(['guest_id' => $guestId]);
             $byProduct = $cart->items()
                 ->whereIn('product_id', $productIds)
                 ->get()
                 ->keyBy('product_id');
 
             foreach ($cartItems as $item) {
-                $ci = $byProduct[$item['product_id']];
+                $ci     = $byProduct[$item['product_id']];
                 $remain = $ci->quantity - $item['quantity'];
-                $remain > 0
-                    ? $ci->update(['quantity' => $remain])
-                    : $ci->delete();
+                $remain > 0 ? $ci->update(['quantity' => $remain]) : $ci->delete();
             }
 
             return $order;
         });
+    }
+
+    // ✅ Extracted repeated shipping+SMS logic into one private method
+    private function sendShippingAndSms(Order $order, array $itemsData, $products, float $buyerTotal): void
+    {
+        $postexResponse = $this->postexService->sendOrderToPostex($order, $itemsData, $products, $buyerTotal);
+        $blueEXResponse = $this->blueExService->sendOrderToBlueEx($order, $itemsData, $products, $buyerTotal);
+
+        $trackingNumber = 'N/A';
+        if (is_array($blueEXResponse) && isset($blueEXResponse['cnno'])) {
+            $trackingNumber = $blueEXResponse['cnno'];
+        } elseif (is_array($postexResponse) && isset($postexResponse['dist']['trackingNumber'])) {
+            $trackingNumber = $postexResponse['dist']['trackingNumber'];
+        }
+
+        // Buyer SMS
+        try {
+            Http::asForm()->post('https://sendpk.com/api/sms.php', [
+                'api_key'     => config('services.sendpk.api_key'),
+                'sender'      => 'Closyyyy',
+                'mobile'      => $order->guest_phone ?? $order->buyer->phone ?? '',
+                'template_id' => 10119,
+                'message'     => json_encode(['name' => $order->guest_name ?? $order->buyer->first_name ?? '', 'trackingID' => $trackingNumber]),
+                'format'      => 'json',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed buyer SMS: ' . $e->getMessage());
+        }
+
+        // Seller SMS
+        try {
+            Http::asForm()->post('https://sendpk.com/api/sms.php', [
+                'api_key'     => config('services.sendpk.api_key'),
+                'sender'      => 'Closyyyy',
+                'mobile'      => $order->seller->phone ?? '',
+                'template_id' => 10120,
+                'message'     => json_encode(['name' => $order->seller->first_name ?? '']),
+                'format'      => 'json',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed seller SMS: ' . $e->getMessage());
+        }
     }
 }

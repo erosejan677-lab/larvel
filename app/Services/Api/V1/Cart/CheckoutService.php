@@ -29,8 +29,7 @@ class CheckoutService
         $this->postexService = $postexService;
         $this->blueExService = $blueExService;
     }
-
-    public function processCheckout(User $buyer, int $sellerId, array $cartItems, int $deliveryAddressId): Order
+public function processCheckout(User $buyer, string $sellerId, array $cartItems, int $deliveryAddressId): Order
     {
         return DB::transaction(function () use ($buyer, $sellerId, $cartItems, $deliveryAddressId) {
             // 1) Lock all products in one go

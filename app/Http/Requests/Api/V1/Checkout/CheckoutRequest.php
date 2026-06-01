@@ -12,56 +12,65 @@ class CheckoutRequest extends FormRequest
 {
     public function authorize()
     {
-        // Buyer must be authenticated
         return $this->user() !== null;
     }
 
     public function rules()
     {
-        $cartId = optional(Cart::firstOrCreate(['user_id' => $this->user()->id]))->id;
+        // ✅ Cast user ID to int — matches bigint column
+        $userId = (int) $this->user()->id;
+        $cartId = optional(Cart::firstOrCreate(['user_id' => $userId]))->id;
 
         return [
-            'seller_id' => ['required', 'exists:users,id',
-                // Seller cannot be the buyer
-                function($attr, $value, $fail) {
-                    if ($value == $this->user()->id) {
+            'seller_id' => [
+                'required',
+                'exists:users,id',
+                function ($attr, $value, $fail) {
+                    if ((int)$value === (int)$this->user()->id) {
                         $fail('You cannot checkout your own products.');
                     }
                 }
             ],
-            'cart_items'             => ['required', 'array', 'min:1'],
-            'cart_items.*.product_id'=> [
+            'cart_items'              => ['required', 'array', 'min:1'],
+            'cart_items.*.product_id' => [
                 'required',
                 'integer',
                 'exists:products,id',
-                // Must exist in this buyer's cart
                 Rule::exists('cart_items', 'product_id')
-                    ->where('cart_id', $cartId)
+                    ->where('cart_id', $cartId),
             ],
-            'cart_items.*.quantity'  => ['required', 'integer', 'min:1'],
-            'delivery_address_id' => [
+            'cart_items.*.quantity'   => ['required', 'integer', 'min:1'],
+            'delivery_address_id'     => [
                 'required',
-                Rule::exists('addresses', 'id')->where(function ($query) {
+                // ✅ Cast user_id to int in the where clause
+                Rule::exists('addresses', 'id')->where(function ($query) use ($userId) {
                     $query->where('address_type', 'shipping')
-                        ->where('user_id', auth()->id());
+                          ->where('user_id', (string) $userId); // ✅ addresses.user_id is TEXT (supports UUIDs too)
                 }),
             ],
-            'cart_items.*.offer_id' => 'nullable|string|exists:offers,id',
+            'cart_items.*.offer_id'   => 'nullable|string|exists:offers,id',
         ];
     }
 
     public function withValidator($validator)
     {
-        $validator->after(function($validator) {
-            $sellerId = $this->input('seller_id');
+        $validator->after(function ($validator) {
+            $sellerId  = (int) $this->input('seller_id'); // ✅ cast to int
             $cartItems = $this->input('cart_items', []);
-            $threshold = 3000;
 
             foreach ($cartItems as $i => $item) {
                 $product = Product::find($item['product_id']);
 
-                // 1) Product must belong to seller
-                if ($product->user_id !== (int)$sellerId) {
+                if (!$product) {
+                    $validator->errors()->add(
+                        "cart_items.{$i}.product_id",
+                        "Product ID {$item['product_id']} not found."
+                    );
+                    continue;
+                }
+
+                // ✅ Both cast to int for safe comparison
+                if ((int)$product->user_id !== $sellerId) {
                     $validator->errors()->add(
                         "cart_items.{$i}.product_id",
                         "Product ID {$product->id} does not belong to seller {$sellerId}."
@@ -69,7 +78,6 @@ class CheckoutRequest extends FormRequest
                     continue;
                 }
 
-                // 2) Requested quantity <= quantity_left
                 if ($item['quantity'] > $product->quantity_left) {
                     $validator->errors()->add(
                         "cart_items.{$i}.quantity",
@@ -77,7 +85,6 @@ class CheckoutRequest extends FormRequest
                     );
                 }
 
-                // (Optional) 3) Prevent over‐large single‐order
                 if ($product->price * $item['quantity'] > 1000000) {
                     $validator->errors()->add(
                         "cart_items.{$i}.quantity",
@@ -85,11 +92,10 @@ class CheckoutRequest extends FormRequest
                     );
                 }
 
-                // 4) Validate offer_id if provided
                 if (isset($item['offer_id']) && $item['offer_id'] !== null) {
                     $offer = Offer::where('id', $item['offer_id'])
                         ->where('product_id', $item['product_id'])
-                        ->where('seller_id', $sellerId)
+                        ->where('seller_id', $sellerId) // ✅ int
                         ->first();
 
                     if (!$offer) {
@@ -106,10 +112,10 @@ class CheckoutRequest extends FormRequest
     public function messages()
     {
         return [
-            'cart_items.*.product_id.exists'  => 'The product must exist in your cart.',
-            'cart_items.*.quantity.min'       => 'You must request at least 1 unit.',
-            'delivery_address_id.required'    => 'Please add an address to confirm order.',
-            'delivery_address_id.exists'      => 'The selected delivery address is invalid or does not belong to you.',
+            'cart_items.*.product_id.exists' => 'The product must exist in your cart.',
+            'cart_items.*.quantity.min'      => 'You must request at least 1 unit.',
+            'delivery_address_id.required'   => 'Please add an address to confirm order.',
+            'delivery_address_id.exists'     => 'The selected delivery address is invalid or does not belong to you.',
         ];
     }
 }

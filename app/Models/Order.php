@@ -33,13 +33,13 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'expected_delivery_date'    => 'date',
-        'actual_delivery_date'      => 'date',
-        'subtotal'                  => 'decimal:2',
-        'delivery_fee'              => 'decimal:2',
-        'platform_fee'              => 'decimal:2',
-        'total_amount'              => 'decimal:2',
-        'is_guest_order'            => 'boolean', // ✅ cast for easy if($order->is_guest_order)
+        'expected_delivery_date'   => 'date',
+        'actual_delivery_date'     => 'date',
+        'subtotal'                 => 'decimal:2',
+        'delivery_fee'             => 'decimal:2',
+        'platform_fee'             => 'decimal:2',
+        'total_amount'             => 'decimal:2',
+        'is_guest_order'           => 'boolean', // ✅ makes if($order->is_guest_order) work cleanly
     ];
 
     public function items()
@@ -48,18 +48,32 @@ class Order extends Model
     }
 
     /**
-     * ✅ Safe buyer relationship — returns null for guest orders
-     * instead of crashing when buyer_id is a UUID string
+     * ✅ Keep this as the Eloquent relationship definition
+     * (used internally by getBuyerAttribute)
      */
     public function buyer()
     {
-        // Guest orders store UUID in buyer_id — don't query users table
-        if ($this->is_guest_order) {
-            return $this->belongsTo(User::class, 'buyer_id')
-                        ->whereRaw('1 = 0'); // always returns null, no DB query
+        return $this->belongsTo(User::class, 'buyer_id');
+    }
+
+    /**
+     * ✅ This accessor intercepts $order->buyer BEFORE any SQL runs.
+     * For guest orders, buyer_id is a UUID — never query users table.
+     * For real users, loads normally via the relationship.
+     */
+    public function getBuyerAttribute()
+    {
+        // Guest order OR buyer_id is not a numeric integer → skip DB query
+        if ($this->is_guest_order || !is_numeric($this->buyer_id)) {
+            return null;
         }
 
-        return $this->belongsTo(User::class, 'buyer_id');
+        // Use Laravel's relation cache to avoid duplicate queries
+        if (!array_key_exists('buyer', $this->relations)) {
+            $this->load('buyer');
+        }
+
+        return $this->relations['buyer'] ?? null;
     }
 
     public function seller()

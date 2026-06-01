@@ -115,12 +115,12 @@ class CheckoutService
             $order->items()->createMany($itemsData);
             ActivityLogHelper::logOrderPlaced($order);
 
-            try {
-                Mail::to($order->seller->email)->send(new OrderSummaryToSeller($order));
-                Mail::to(config('app.admin_email'))->send(new OrderSummaryToAdmin($order));
-            } catch (\Exception $e) {
-                Log::error('Failed to send order summary email: ' . $e->getMessage());
-            }
+            // try {
+            //     Mail::to($order->seller->email)->send(new OrderSummaryToSeller($order));
+            //     Mail::to(config('app.admin_email'))->send(new OrderSummaryToAdmin($order));
+            // } catch (\Exception $e) {
+            //     Log::error('Failed to send order summary email: ' . $e->getMessage());
+            // }
 
             foreach ($cartItems as $item) {
                 $p      = $products[$item['product_id']];
@@ -237,12 +237,12 @@ class CheckoutService
 
             $order->items()->createMany($itemsData);
 
-            try {
-                Mail::to($order->seller->email)->send(new OrderSummaryToSeller($order));
-                Mail::to(config('app.admin_email'))->send(new OrderSummaryToAdmin($order));
-            } catch (\Exception $e) {
-                Log::error('Failed order emails: ' . $e->getMessage());
-            }
+            // try {
+            //     Mail::to($order->seller->email)->send(new OrderSummaryToSeller($order));
+            //     Mail::to(config('app.admin_email'))->send(new OrderSummaryToAdmin($order));
+            // } catch (\Exception $e) {
+            //     Log::error('Failed order emails: ' . $e->getMessage());
+            // }
 
             foreach ($cartItems as $item) {
                 $p       = $products[$item['product_id']];
